@@ -134,9 +134,28 @@ with tab1:
                     ]
                 )
                 
-                # ESTRATTORE DI SICUREZZA DIZIONARIO STANDARD (Compatibile con ogni versione)
-                dati_risposta = risposta.model_dump()
-                st.session_state["testo_verifica"] = dati_risposta["choices"][0]["message"]["content"]
+                # ESTRATTORE UNIVERSALE CELESTE E BLINDATO CONTRO CRASH
+                testo_estratto = ""
+                try:
+                    # Tenta la sintassi standard ad oggetti v1+
+                    testo_estratto = risposta.choices[0].message.content
+                except Exception:
+                    try:
+                        # Tenta la sintassi senza indice
+                        testo_estratto = risposta.choices.message.content
+                    except Exception:
+                        try:
+                            # Tenta la conversione in dizionario nativo
+                            testo_estratto = risposta["choices"][0]["message"]["content"]
+                        except Exception:
+                            # Ultima spiaggia: decodifica forzata come testo JSON raw
+                            try:
+                                raw_json = json.loads(risposta.model_dump_json())
+                                testo_estratto = raw_json["choices"][0]["message"]["content"]
+                            except Exception as final_err:
+                                testo_estratto = f"Impossibile leggere i dati. Risposta grezza: {str(risposta)}"
+                
+                st.session_state["testo_verifica"] = testo_estratto
                 st.success("Verifica Generata con Successo!")
 
     if "testo_verifica" in st.session_state:
@@ -191,17 +210,3 @@ with tab2:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
                 bytes_data = foto_caricata.getvalue()
                 base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                
-                msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
-                testo_utente = {"type": "text", "text": f"Soluzioni del professore: {soluzioni_prof}"}
-                immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                msg_utente = {"role": "user", "content": [testo_utente, immagine_utente]}
-                
-                risposta = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[msg_sistema, msg_utente],
-                    temperature=0.2
-                )
-                
-                # ESTRATTORE DI SICUREZZA DIZIONARIO STANDARD (Compatibile con ogni versione)
-                dati_correzione = risposta.model_dump()

@@ -6,54 +6,72 @@ from openai import OpenAI
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# LETTURA DELLA CHIAVE OPENAI (Nascosta nei Secrets di Streamlit per sicurezza)
+# LETTURA DELLA CHIAVE OPENAI (Nascosta nei Secrets)
 OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
 client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
 
-# ==========================================
-# GESTIONE ACCESSO CON PASSWORD PERSONALE
-# ==========================================
-# Definiamo la password che i professori dovranno usare per entrare
-PASSWORD_CORRETTA = "PROF2026"  # Puoi cambiare questa parola con quella che vuoi
+# ==========================================================
+# METODO 1: GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
+# ==========================================================
+# Credenziali di default per i tuoi test iniziali
+UTENTI_DEFAULT = {
+    "admin@educorrect.it": "AdminPass2026",
+    "prof.test@scuola.it": "TestScuola99"
+}
 
-# Controlliamo se l'utente ha già effettuato l'accesso
+# Caricamento dinamico degli utenti dai Secrets di Streamlit
+UTENTI_ATTIVI = UTENTI_DEFAULT
+if "UTENTI_ABILITATI" in st.secrets:
+    try:
+        import json
+        UTENTI_ATTIVI = json.loads(st.secrets["UTENTI_ABILITATI"])
+    except Exception:
+        UTENTI_ATTIVI = UTENTI_DEFAULT
+
+# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
+if "utente_connesso" not in st.session_state:
+    st.session_state["utente_connesso"] = ""
 
-# Se l'utente NON è autenticato, mostra la schermata di login
+# SCHERMATA DI LOGIN
 if not st.session_state["autenticato"]:
-    st.title("🔒 Accesso Riservato - EduCorrect")
-    st.write("Inserisci la password fornita dall'amministratore per utilizzare il software.")
+    st.title("🔒 Area Riservata Docenti - EduCorrect")
+    st.write("Inserisci le tue credenziali personali per accedere al pannello software.")
     
-    password_inserita = st.text_input("Password di accesso:", type="password")
+    email_inserita = st.text_input("Inserisci la tua Email:", placeholder="nome.cognome@scuola.it")
+    password_inserita = st.text_input("Inserisci la tua Password:", type="password")
     
-    if st.button("Accedi"):
-        if password_inserita == PASSWORD_CORRETTA:
+    if st.button("Accedi al Sistema"):
+        if email_inserita in UTENTI_ATTIVI and password_inserita == UTENTI_ATTIVI[email_inserita]:
             st.session_state["autenticato"] = True
+            st.session_state["utente_connesso"] = email_inserita
+            st.success("Accesso eseguito con successo!")
             st.rerun()
         else:
-            st.error("❌ Password errata! Riprova o contatta l'assistenza.")
+            st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop() # Blocca il resto del codice se la password è sbagliata
+    st.stop() # Blocca l'esecuzione se non si è loggati
 
-# ==========================================
-# SE LA PASSWORD È GIUSTA, MOSTRA L'APP VERA
-# ==========================================
+# ==========================================================
+# INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
+# ==========================================================
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
-st.write("Semplifica il tuo lavoro di docente. Genera compiti e correggi le foto delle verifiche in pochi secondi.")
+st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
-# Tasto per fare il Logout nella barra laterale
-if st.sidebar.button("Esci dal profilo"):
+# Pulsante per effettuare il Logout
+if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
+    st.session_state["utente_connesso"] = ""
     st.rerun()
 
 if not OPENAI_KEY:
-    st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura la API KEY nei Secrets di Streamlit).")
+    st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura la API KEY nei Secrets).")
 
-# SCHEDE (TABS) IN ITALIANO
+# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
-# --- SCHEDA 1: GENERATORE ---
+# --- SCHEDA 1: GENERATORE DI VERIFICHE ---
 with tab1:
     st.header("Generatore di Compiti in Classe")
     col1, col2 = st.columns(2)
@@ -86,7 +104,7 @@ with tab1:
                 except Exception as e:
                     st.error(f"Errore: {str(e)}")
 
-# --- SCHEDA 2: SCANNER ---
+# --- SCHEDA 2: SCANNER E CORRETTORE ---
 with tab2:
     st.header("Scanner e Correttore Automatico")
     soluzioni_prof = st.text_area("Incolla qui le soluzioni corrette della verifica (o i criteri di valutazione):")

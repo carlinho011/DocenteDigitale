@@ -130,14 +130,18 @@ with tab1:
                 except Exception as e:
                     st.error(f"Errore: {str(e)}")
 
-    # Se la verifica è stata generata, mostra l'anteprima e il pulsante Stampa
+    # Se la verifica è stata generata, mostra l'anteprima leggibile e il pulsante Stampa
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
         
-        # Mostriamo il testo formattato in un box visivo
-        st.markdown(f"<div style='background-color: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #ddd;'>{st.session_state['testo_verifica'].replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+        # FIX: Testo nero forzato e font leggibile
+        testo_formattato_v = st.session_state['testo_verifica'].replace('\n', '<br>')
+        st.markdown(f"""
+            <div style='background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6;'>
+                {testo_formattato_v}
+            </div>
+        """, unsafe_allow_html=True)
         
-        # Pulsante HTML/JS nativo per avviare la stampa della pagina del browser
         st.html("""
             <br>
             <button onclick="window.print()" style="
@@ -188,6 +192,32 @@ with tab2:
                     st.success("Correzione Completata!")
                 except Exception as e:
                     st.error(f"Errore durante la scansione: {str(e)}")
+
+    # Se la correzione esiste, mostra l'anteprima leggibile e il pulsante per stamparla
+    if "testo_correzione" in st.session_state:
+        st.subheader("Report della Correzione")
+        
+        # FIX: Testo nero forzato e font leggibile
+        testo_formattato_c = st.session_state['testo_correzione'].replace('\n', '<br>')
+        st.markdown(f"""
+            <div style='background-color: #fffafd; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ffeeba; font-family: sans-serif; line-height: 1.6;'>
+                {testo_formattato_c}
+            </div>
+        """, unsafe_allow_html=True)
+        
+        st.html("""
+            <br>
+            <button onclick="window.print()" style="
+                background-color: #008CBA; 
+                color: white; 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-size: 16px;">
+                🖨️ Stampa Report Correzione
+            </button>
+        """)
 
     # Se la correzione esiste, mostra l'anteprima e il pulsante per stamparla
     if "testo_correzione" in st.session_state:

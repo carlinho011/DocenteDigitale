@@ -124,7 +124,7 @@ with tab1:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
                 try:
                     # Istruzione al sistema per marcare le soluzioni con un tag dedicato
-                    prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMNETE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
+                    prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMENTE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
                     
                     if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
                         dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."

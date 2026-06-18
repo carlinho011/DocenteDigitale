@@ -7,37 +7,50 @@ from openai import OpenAI
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
+# Stili CSS per la stampa pulita (Nasconde la sidebar e i pulsanti di Streamlit quando stampi)
+st.markdown("""
+    <style>
+    @media print {
+        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"] {
+            display: none !map-important;
+            visibility: hidden;
+        }
+        .main .block-container {
+            padding-top: 0px;
+            padding-bottom: 0px;
+        }
+    }
+    </style>
+""", unsafe_allow_html=True)
+
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
-# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
 if GITHUB_TOKEN:
     client = OpenAI(
-        base_url="https://azure.com",  # Endpoint corretto per GitHub Models
+        base_url="https://models.inference.ai.azure.com",  # URL CORRETTO per GitHub Models
         api_key=GITHUB_TOKEN
     )
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
-# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
-# Caricamento dinamico degli utenti dai Secrets di Streamlit
-UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
         UTENTI_ATTIVI = json.loads(st.secrets["UTENTI_ABILITATI"])
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
+else:
+    UTENTI_ATTIVI = UTENTI_DEFAULT
 
-# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -60,7 +73,7 @@ if not st.session_state["autenticato"]:
         else:
             st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop() # Blocca l'esecuzione se non si è loggati
+    st.stop()
 
 # ==========================================================
 # INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
@@ -68,7 +81,6 @@ if not st.session_state["autenticato"]:
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
-# Pulsante per effettuare il Logout
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -77,7 +89,6 @@ if st.sidebar.button("Disconnetti / Esci"):
 if not GITHUB_TOKEN:
     st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
-# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -114,10 +125,32 @@ with tab1:
                             {"role": "user", "content": prompt_utente}
                         ]
                     )
+                    st.session_state["testo_verifica"] = risposta.choices[0].message.content
                     st.success("Verifica Generata con Successo!")
-                    st.text_area("Copia il testo qui sotto:", value=risposta.choices[0].message.content, height=400)
                 except Exception as e:
                     st.error(f"Errore: {str(e)}")
+
+    # Se la verifica è stata generata, mostra l'anteprima e il pulsante Stampa
+    if "testo_verifica" in st.session_state:
+        st.subheader("Anteprima della Verifica")
+        
+        # Mostriamo il testo formattato in un box visivo
+        st.markdown(f"<div style='background-color: #f9f9f9; padding: 20px; border-radius: 5px; border: 1px solid #ddd;'>{st.session_state['testo_verifica'].replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+        
+        # Pulsante HTML/JS nativo per avviare la stampa della pagina del browser
+        st.html("""
+            <br>
+            <button onclick="window.print()" style="
+                background-color: #4CAF50; 
+                color: white; 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-size: 16px;">
+                🖨️ Stampa questa Verifica
+            </button>
+        """)
 
 # --- SCHEDA 2: SCANNER E CORRETTORE ---
 with tab2:
@@ -151,8 +184,28 @@ with tab2:
                         ],
                         temperature=0.2
                     )
+                    st.session_state["testo_correzione"] = risposta.choices[0].message.content
                     st.success("Correzione Completata!")
-                    st.markdown(risposta.choices[0].message.content)
                 except Exception as e:
                     st.error(f"Errore durante la scansione: {str(e)}")
+
+    # Se la correzione esiste, mostra l'anteprima e il pulsante per stamparla
+    if "testo_correzione" in st.session_state:
+        st.subheader("Report della Correzione")
+        st.markdown(f"<div style='background-color: #fff3cd; padding: 20px; border-radius: 5px; border: 1px solid #ffeeba;'>{st.session_state['testo_correzione'].replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+        
+        st.html("""
+            <br>
+            <button onclick="window.print()" style="
+                background-color: #008CBA; 
+                color: white; 
+                padding: 12px 24px; 
+                border: none; 
+                border-radius: 4px; 
+                cursor: pointer; 
+                font-size: 16px;">
+                🖨️ Stampa Report Correzione
+            </button>
+        """)
+
 

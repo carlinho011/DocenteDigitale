@@ -7,7 +7,7 @@ from openai import OpenAI
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# Stili CSS per la stampa pulita (Nasconde la sidebar e i pulsanti di Streamlit quando stampi)
+# Stili CSS per la stampa pulita (Nasconde la barra laterale e i pulsanti quando stampi)
 st.markdown("""
     <style>
     @media print {
@@ -34,23 +34,26 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
 if GITHUB_TOKEN:
     client = OpenAI(
-        base_url="https://azure.com",
+        base_url="https://azure.com",  # Endpoint ufficiale GitHub Models
         api_key=GITHUB_TOKEN
     )
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
+# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
+# Caricamento dinamico degli utenti dai Secrets di Streamlit
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -81,7 +84,7 @@ if not st.session_state["autenticato"]:
         else:
             st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop()
+    st.stop() # Blocca l'esecuzione se non si è loggati
 
 # ==========================================================
 # INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
@@ -89,6 +92,7 @@ if not st.session_state["autenticato"]:
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
+# Pulsante per effettuare il Logout
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -97,6 +101,7 @@ if st.sidebar.button("Disconnetti / Esci"):
 if not GITHUB_TOKEN:
     st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
+# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -117,7 +122,7 @@ with tab1:
             st.error("Scrivi un argomento prima di generare!")
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
-                prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMNETE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
+                prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMENTE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
                 
                 if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
                     dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
@@ -157,16 +162,19 @@ with tab1:
         </div>
         """
         
-        st.html(f"""
-            <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
-                {intestazione_studente}
-                {testo_elaborato}
-            </div>
-            <br>
-            <button onclick="window.print()" style="background-color: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-                🖨️ Stampa Verifica (Soluzioni separate)
-            </button>
-        """)
+        # Gestione sicura delle stringhe HTML per prevenire errori con le graffe CSS
+        box_anteprima = """
+        <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
+            {0}
+            {1}
+        </div>
+        <br>
+        <button onclick="window.print()" style="background-color: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
+            🖨️ Stampa Verifica (Soluzioni separate)
+        </button>
+        """.format(intestazione_studente, testo_elaborato)
+        
+        st.html(box_anteprima)
 
 # --- SCHEDA 2: SCANNER E CORRETTORE ---
 with tab2:
@@ -190,18 +198,10 @@ with tab2:
                 msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
                 testo_utente = {"type": "text", "text": f"Soluzioni del professore: {soluzioni_prof}"}
                 immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                msg_utente = {"role": "user", "content": [testo_utente, imagen_utente]}
+                msg_utente = {"role": "user", "content": [testo_utente, immagine_utente]}
                 
                 risposta = client.chat.completions.create(
                     model="gpt-4o-mini",
                     messages=[msg_sistema, msg_utente],
                     temperature=0.2
                 )
-                st.session_state["testo_correzione"] = risposta.choices[0].message.content
-                st.success("Correzione Completata!")
-
-    if "testo_correzione" in st.session_state:
-        st.subheader("Report della Correzione")
-        testo_formattato_c = st.session_state['testo_correzione'].replace('\n', '<br>')
-        
-        st.html(f"""

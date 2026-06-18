@@ -139,7 +139,7 @@ with tab1:
                         st.session_state["testo_verifica"] = risposta.choices[0].message.content
                         st.success("Verifica Generata con Successo!")
                     else:
-                        st.error(f"Il server ha risposto con un messaggio di errore anziché con il testo: {str(risposta)}")
+                        st.error("Errore nell'elaborazione della risposta dal server.")
                 except Exception as e:
                     st.error(f"Errore nella generazione: {str(e)}")
 
@@ -194,12 +194,10 @@ with tab2:
                 try:
                     bytes_data = foto_caricata.getvalue()
                     base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                    prompt_sistema = "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."
                     
-                    # Usiamo gpt-4o-mini che è molto più stabile con l'input multimediale su GitHub Tier gratuiti
-                    risposta = client.chat.completions.create(
-                        model="gpt-4o-mini",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": [
-                                {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
+                    # FIX DEFINITIVO SINTASSI VISION: Messaggi separati lineari senza nidificazioni errate di parentesi quadre
+                    msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
+                    
+                    # Costruzione lineare del contenuto multimediale per l'utente
+                    testo_utente = {"type": "text", "text": f"Soluzioni del professore da usare come riferimento: {soluzioni_prof}"}
+                    immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}

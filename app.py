@@ -34,7 +34,6 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
-# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
@@ -47,13 +46,11 @@ if GITHUB_TOKEN:
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
-# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
-# Caricamento dinamico degli utenti dai Secrets di Streamlit
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -129,33 +126,20 @@ with tab1:
 
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
-                # Chiamata API protetta
-                try:
-                    risposta = client.chat.completions.create(
-                        model="gpt-4o", 
-                        messages=[
-                            {"role": "system", "content": prompt_sistema}, 
-                            {"role": "user", "content": prompt_utente}
-                        ]
-                    )
-                    
-                    testo_estratto = ""
-                    try:
-                        testo_estratto = risposta.choices[0].message.content
-                    except Exception:
-                        try:
-                            testo_estratto = risposta.choices.message.content
-                        except Exception:
-                            try:
-                                testo_estratto = risposta["choices"][0]["message"]["content"]
-                            except Exception:
-                                # MODIFICA DI DEBUG: Mostra a schermo l'errore effettivo inviato da GitHub
-                                testo_estratto = f"Impossibile leggere i dati. Errore generato da GitHub: {str(risposta)}"
-                    
-                    st.session_state["testo_verifica"] = testo_estratto
-                    st.success("Operazione completata!")
-                except Exception as api_err:
-                    st.session_state["testo_verifica"] = f"Errore di connessione API: {str(api_err)}"
+                risposta = client.chat.completions.create(
+                    model="gpt-4o", 
+                    messages=[
+                        {"role": "system", "content": prompt_sistema}, 
+                        {"role": "user", "content": prompt_utente}
+                    ]
+                )
+                
+                # Estrazione testuale sicura adattiva
+                if hasattr(risposta, 'choices') and risposta.choices:
+                    st.session_state["testo_verifica"] = risposta.choices[0].message.content
+                else:
+                    st.session_state["testo_verifica"] = str(risposta)
+                st.success("Operazione completata!")
 
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
@@ -207,6 +191,18 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
-                try:
-                    bytes_data = foto_caricata.getvalue()
-                    base64_image = base64.b64encode(bytes_data).decode('utf-8')
+                bytes_data = foto_caricata.getvalue()
+                base64_image = base64.b64encode(bytes_data).decode('utf-8')
+                
+                msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
+                testo_utente = {"type": "text", "text": f"Soluzioni del professore: {soluzioni_prof}"}
+                immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                msg_utente = {"role": "user", "content": [testo_utente, immagine_utente]}
+                
+                risposta_c = client.chat.completions.create(
+                    model="gpt-4o-mini",
+                    messages=[msg_sistema, msg_utente],
+                    temperature=0.2
+                )
+                
+                # Estrazione testuale sicura adattiva per la correzione

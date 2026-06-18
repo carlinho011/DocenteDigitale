@@ -139,7 +139,7 @@ with tab1:
                     ]
                 )
                 # FIX COMPLETO: Ripristinato l'indice [0] corretto richiesto dall'SDK
-                st.session_state["testo_verifica"] = risposta.choices[0].message.content
+                st.session_state["testo_verifica"] = risposta.choices.message.content
                 st.success("Verifica Generata con Successo!")
 
     if "testo_verifica" in st.session_state:

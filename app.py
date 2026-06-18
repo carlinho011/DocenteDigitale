@@ -34,13 +34,16 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
 if GITHUB_TOKEN:
+    # FIX: Configurazione avanzata dell'SDK per impedire i redirect alla pagina web di Azure
     client = OpenAI(
-        base_url="https://azure.com",  # Endpoint ufficiale GitHub Models
-        api_key=GITHUB_TOKEN
+        base_url="https://azure.com",
+        api_key=GITHUB_TOKEN,
+        default_headers={"extra-headers": "github-models"}
     )
 
 # ==========================================================
@@ -92,6 +95,10 @@ st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
+    if "testo_verifica" in st.session_state:
+        del st.session_state["testo_verifica"]
+    if "testo_correzione" in st.session_state:
+        del st.session_state["testo_correzione"]
     st.rerun()
 
 if not GITHUB_TOKEN:
@@ -117,29 +124,34 @@ with tab1:
             st.error("Scrivi un argomento prima di generare!")
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
-                prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMENTE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
-                
-                if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
-                    dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
-                else:
-                    dettaglio_stile = f"composta esclusivamente da domande di tipo: {stile_domande}."
+                try:
+                    prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMENTE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
+                    
+                    if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
+                        dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
+                    else:
+                        dettaglio_stile = f"composta esclusivamente da domande di tipo: {stile_domande}."
 
-                prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
-                
-                risposta = client.chat.completions.create(
-                    model="gpt-4o", 
-                    messages=[
-                        {"role": "system", "content": prompt_sistema}, 
-                        {"role": "user", "content": prompt_utente}
-                    ]
-                )
-                
-                # Estrazione testuale sicura adattiva
-                if hasattr(risposta, 'choices') and risposta.choices:
-                    st.session_state["testo_verifica"] = risposta.choices[0].message.content
-                else:
-                    st.session_state["testo_verifica"] = str(risposta)
-                st.success("Operazione completata!")
+                    prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
+                    
+                    risposta = client.chat.completions.create(
+                        model="gpt-4o", 
+                        messages=[
+                            {"role": "system", "content": prompt_sistema}, 
+                            {"role": "user", "content": prompt_utente}
+                        ]
+                    )
+                    
+                    testo_pulito = risposta.choices[0].message.content
+                    
+                    # FILTRO DI CONTROLLO: Se la risposta contiene codice del sito Azure, blocca il salvataggio
+                    if "Microsoft" in testo_pulito or "Azure" in testo_pulito or "Skip to main" in testo_pulito:
+                        st.error("⚠️ Errore di autenticazione: Il server GitHub ha rifiutato il token rimandando alla pagina di login di Azure. Verifica che il token inserito sia corretto, non sia scaduto o che non siano stati superati i limiti orari gratuiti.")
+                    else:
+                        st.session_state["testo_verifica"] = testo_pulito
+                        st.success("Operazione completata!")
+                except Exception as e:
+                    st.error(f"Errore tecnico di connessione: {str(e)}")
 
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
@@ -191,18 +203,6 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
-                bytes_data = foto_caricata.getvalue()
-                base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                
-                msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
-                testo_utente = {"type": "text", "text": f"Soluzioni del professore: {soluzioni_prof}"}
-                immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                msg_utente = {"role": "user", "content": [testo_utente, immagine_utente]}
-                
-                risposta_c = client.chat.completions.create(
-                    model="gpt-4o-mini",
-                    messages=[msg_sistema, msg_utente],
-                    temperature=0.2
-                )
-                
-                # Estrazione testuale sicura adattiva per la correzione
+                try:
+                    bytes_data = foto_caricata.getvalue()
+                    base64_image = base64.b64encode(bytes_data).decode('utf-8')

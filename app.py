@@ -141,8 +141,15 @@ with tab1:
                     ]
                 )
                 
-                # CORREZIONE: Inserito l'indice posizionale [0] richiesto dall'oggetto risposta valido
-                testo_pulito = risposta.choices[0].message.content
+                # ESTRATTORE DI SICUREZZA DIZIONARIO/OGGETTO ADATTIVO (Senza zeri e senza punti rigidi)
+                testo_pulito = ""
+                if isinstance(risposta, dict):
+                    testo_pulito = risposta["choices"][0]["message"]["content"]
+                elif hasattr(risposta, "choices"):
+                    scelte = getattr(risposta, "choices")
+                    testo_pulito = scelte[0].message.content if isinstance(scelte, list) else scelte.message.content
+                else:
+                    testo_pulito = str(risposta)
                 
                 if "Microsoft" in testo_pulito or "Azure" in testo_pulito or "Skip to main" in testo_pulito:
                     st.error("⚠️ Errore di autenticazione: Il server GitHub ha rifiutato il token rimandando alla pagina di login di Azure. Verifica che il token inserito sia corretto, non sia scaduto o che non siano stati superati i limiti orari gratuiti.")
@@ -200,6 +207,3 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
-                bytes_data = foto_caricata.getvalue()
-                base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                

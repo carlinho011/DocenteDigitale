@@ -138,7 +138,7 @@ with tab1:
                         {"role": "user", "content": prompt_utente}
                     ]
                 )
-                # FIX SINTASSI: Lettura sicura dell'attributo per evitare l'AttributeError
+                # FIX COMPLETO: Ripristinato l'indice [0] corretto richiesto dall'SDK
                 st.session_state["testo_verifica"] = risposta.choices[0].message.content
                 st.success("Verifica Generata con Successo!")
 

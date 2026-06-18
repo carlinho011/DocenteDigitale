@@ -58,6 +58,7 @@ if "UTENTI_ABILITATI" in st.secrets:
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
 
+# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -80,7 +81,7 @@ if not st.session_state["autenticato"]:
         else:
             st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop()
+    st.stop() # Blocca l'esecuzione se non si è loggati
 
 # ==========================================================
 # INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
@@ -88,6 +89,7 @@ if not st.session_state["autenticato"]:
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
+# Pulsante per effettuare il Logout
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -96,6 +98,7 @@ if st.sidebar.button("Disconnetti / Esci"):
 if not GITHUB_TOKEN:
     st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
+# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -207,5 +210,3 @@ with tab2:
                                 {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
                                 {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                             ]}
-                        ],
-                        temperature=0.2

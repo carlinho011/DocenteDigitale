@@ -141,13 +141,12 @@ with tab1:
                     ]
                 )
                 
-                # ESTRATTORE DI SICUREZZA DIZIONARIO/OGGETTO ADATTIVO (Senza zeri e senza punti rigidi)
                 testo_pulito = ""
                 if isinstance(risposta, dict):
-                    testo_pulito = risposta["choices"][0]["message"]["content"]
+                    testo_pulito = risposta["choices"]["message"]["content"]
                 elif hasattr(risposta, "choices"):
                     scelte = getattr(risposta, "choices")
-                    testo_pulito = scelte[0].message.content if isinstance(scelte, list) else scelte.message.content
+                    testo_pulito = scelte.message.content if isinstance(scelte, list) else scelte.message.content
                 else:
                     testo_pulito = str(risposta)
                 
@@ -207,3 +206,4 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
+                bytes_data = foto_caricata.getvalue()

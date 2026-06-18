@@ -141,7 +141,8 @@ with tab1:
                     ]
                 )
                 
-                testo_pulito = risposta.choices.message.content
+                # CORREZIONE: Inserito l'indice posizionale [0] richiesto dall'oggetto risposta valido
+                testo_pulito = risposta.choices[0].message.content
                 
                 if "Microsoft" in testo_pulito or "Azure" in testo_pulito or "Skip to main" in testo_pulito:
                     st.error("⚠️ Errore di autenticazione: Il server GitHub ha rifiutato il token rimandando alla pagina di login di Azure. Verifica che il token inserito sia corretto, non sia scaduto o che non siano stati superati i limiti orari gratuiti.")
@@ -202,4 +203,3 @@ with tab2:
                 bytes_data = foto_caricata.getvalue()
                 base64_image = base64.b64encode(bytes_data).decode('utf-8')
                 
-                msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}

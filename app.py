@@ -34,6 +34,7 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
@@ -46,11 +47,13 @@ if GITHUB_TOKEN:
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
+# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
+# Caricamento dinamico degli utenti dai Secrets di Streamlit
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -126,37 +129,33 @@ with tab1:
 
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
-                risposta = client.chat.completions.create(
-                    model="gpt-4o", 
-                    messages=[
-                        {"role": "system", "content": prompt_sistema}, 
-                        {"role": "user", "content": prompt_utente}
-                    ]
-                )
-                
-                # ESTRATTORE UNIVERSALE CELESTE E BLINDATO CONTRO CRASH
-                testo_estratto = ""
+                # Chiamata API protetta
                 try:
-                    # Tenta la sintassi standard ad oggetti v1+
-                    testo_estratto = risposta.choices[0].message.content
-                except Exception:
+                    risposta = client.chat.completions.create(
+                        model="gpt-4o", 
+                        messages=[
+                            {"role": "system", "content": prompt_sistema}, 
+                            {"role": "user", "content": prompt_utente}
+                        ]
+                    )
+                    
+                    testo_estratto = ""
                     try:
-                        # Tenta la sintassi senza indice
-                        testo_estratto = risposta.choices.message.content
+                        testo_estratto = risposta.choices[0].message.content
                     except Exception:
                         try:
-                            # Tenta la conversione in dizionario nativo
-                            testo_estratto = risposta["choices"][0]["message"]["content"]
+                            testo_estratto = risposta.choices.message.content
                         except Exception:
-                            # Ultima spiaggia: decodifica forzata come testo JSON raw
                             try:
-                                raw_json = json.loads(risposta.model_dump_json())
-                                testo_estratto = raw_json["choices"][0]["message"]["content"]
-                            except Exception as final_err:
-                                testo_estratto = f"Impossibile leggere i dati. Risposta grezza: {str(risposta)}"
-                
-                st.session_state["testo_verifica"] = testo_estratto
-                st.success("Verifica Generata con Successo!")
+                                testo_estratto = risposta["choices"][0]["message"]["content"]
+                            except Exception:
+                                # MODIFICA DI DEBUG: Mostra a schermo l'errore effettivo inviato da GitHub
+                                testo_estratto = f"Impossibile leggere i dati. Errore generato da GitHub: {str(risposta)}"
+                    
+                    st.session_state["testo_verifica"] = testo_estratto
+                    st.success("Operazione completata!")
+                except Exception as api_err:
+                    st.session_state["testo_verifica"] = f"Errore di connessione API: {str(api_err)}"
 
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
@@ -208,5 +207,6 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
-                bytes_data = foto_caricata.getvalue()
-                base64_image = base64.b64encode(bytes_data).decode('utf-8')
+                try:
+                    bytes_data = foto_caricata.getvalue()
+                    base64_image = base64.b64encode(bytes_data).decode('utf-8')

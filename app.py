@@ -2,6 +2,23 @@ import streamlit as st
 import os
 import base64
 from openai import OpenAI
+from openai import OpenAI
+
+# ❌ VECCHIA CONFIGURAZIONE (OpenAI)
+# client = OpenAI(api_key="sk-...")
+
+#  CONFIGURAZIONE AGGIORNATA (GitHub Models)
+client = OpenAI(
+    base_url="https://azure.com",
+    api_key="IL_TUO_TOKEN_GITHUB_QUI"
+)
+
+# Ricordati di usare un modello disponibile su GitHub (es. "gpt-4o" o "Phi-3-mini")
+response = client.chat.completions.create(
+    messages=[{"role": "user", "content": "Ciao!"}],
+    model="gpt-4o" 
+)
+print(response.choices[0].message.content)
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")

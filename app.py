@@ -39,7 +39,7 @@ GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY",
 client = None
 if GITHUB_TOKEN:
     client = OpenAI(
-        base_url="https://azure.com",
+        base_url="https://azure.com",  # Endpoint ufficiale GitHub Models
         api_key=GITHUB_TOKEN
     )
 
@@ -58,6 +58,7 @@ if "UTENTI_ABILITATI" in st.secrets:
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
 
+# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -133,10 +134,14 @@ with tab1:
                             {"role": "user", "content": prompt_utente}
                         ]
                     )
-                    st.session_state["testo_verifica"] = risposta.choices[0].message.content
-                    st.success("Verifica Generata con Successo!")
+                    
+                    if hasattr(risposta, 'choices') and risposta.choices:
+                        st.session_state["testo_verifica"] = risposta.choices[0].message.content
+                        st.success("Verifica Generata con Successo!")
+                    else:
+                        st.error(f"Il server ha risposto con un messaggio di errore anziché con il testo: {str(risposta)}")
                 except Exception as e:
-                    st.error(f"Errore: {str(e)}")
+                    st.error(f"Errore nella generazione: {str(e)}")
 
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
@@ -186,24 +191,15 @@ with tab2:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
             with st.spinner("L'IA sta leggendo la calligrafia..."):
-                bytes_data = foto_caricata.getvalue()
-                base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                prompt_sistema = "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."
-                
-                # Chiamata lineare pulita senza blocchi try/except nidificati male
-                risposta = client.chat.completions.create(
-                    model="gpt-4o",
-                    messages=[
-                        {"role": "system", "content": prompt_sistema},
-                        {"role": "user", "content": [
-                            {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
-                            {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                        ]}
-                    ],
-                    temperature=0.2
-                )
-                st.session_state["testo_correzione"] = risposta.choices[0].message.content
-                st.success("Correzione Completata!")
-
-    if "testo_correzione" in st.session_state:
-        st.subheader("Report della Correzione")
+                try:
+                    bytes_data = foto_caricata.getvalue()
+                    base64_image = base64.b64encode(bytes_data).decode('utf-8')
+                    prompt_sistema = "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."
+                    
+                    # Usiamo gpt-4o-mini che è molto più stabile con l'input multimediale su GitHub Tier gratuiti
+                    risposta = client.chat.completions.create(
+                        model="gpt-4o-mini",
+                        messages=[
+                            {"role": "system", "content": prompt_sistema},
+                            {"role": "user", "content": [
+                                {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 

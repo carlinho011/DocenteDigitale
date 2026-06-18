@@ -7,22 +7,20 @@ from openai import OpenAI
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
 # Configurazione del client OpenAI
-# Legge la chiave inserita nei segreti del sito o in una casella di testo
 api_key = os.environ.get("OPENAI_API_KEY", "")
 if not api_key:
-    # Se non trova la chiave nel sistema, mostra un campo sulla barra laterale del sito
     api_key = st.sidebar.text_input("Inserisci la tua OpenAI API Key:", type="password")
 
 client = OpenAI(api_key=api_key) if api_key else None
 
-# Titolo principale della grafica
+# Titolo principale della grafica in italiano
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.write("Semplifica il tuo lavoro di docente. Genera compiti e correggi le foto delle verifiche in pochi secondi.")
 
 if not api_key:
     st.warning("⚠️ Per far funzionare l'applicazione, inserisci la tua OpenAI API Key nella barra a sinistra.")
 
-# 2. CREAZIONE DELLE SCHEDE (TABS) NELLA GRAFICA
+# 2. CREAZIONE DELLE SCHEDE (TABS) IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # ==========================================
@@ -31,26 +29,45 @@ tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"]
 with tab1:
     st.header("Generatore di Compiti in Classe")
     
-    # Elementi grafici di input
     col1, col2 = st.columns(2)
     with col1:
         argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani, La prima guerra mondiale...")
     with col2:
-        stile_domande = st.selectbox("Tipo di domande:", ["Risposte aperte", "Scelta multipla", "Vero o Falso"])
+        # AGGIUNTA L'OPZIONE 'DOMANDE MISTE'
+        stile_domande = st.selectbox("Tipo di domande:", ["Domande miste (Vero/Falso, Crocette, Aperte)", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     
-    numero_domande = st.slider("Numero di domande:", min_value=1, max_value=20, value=5)
+    numero_domande = st.slider("Numero di domande totali:", min_value=1, max_value=20, value=5)
     
-    # Bottone per attivare l'IA
     if st.button("Genera Testo Verifica"):
         if not client:
             st.error("Inserisci prima la tua API Key.")
         elif not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
-            with st.spinner("L'intelligenza artificiale sta scrivendo il compito..."):
+            with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
                 try:
-                    prompt_sistema = "Sei un assistente didattico per professori. Crea una verifica scolastica chiara e adatta alle superiori."
-                    prompt_utente = f"Crea una verifica su: {argomento}. Tipo: {stile_domande}. Domande: {numero_domande}. Includi in fondo le soluzioni."
+                    # Istruzioni forzate in italiano per l'IA
+                    prompt_sistema = (
+                        "Sei un assistente didattico per professori italiani. "
+                        "Devi generare la verifica e le risposte ESATTAMENTE E SOLO IN LINGUA ITALIANA. "
+                        "Usa il sistema di valutazione scolastico italiano."
+                    )
+                    
+                    # Logica per gestire le domande miste
+                    if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
+                        dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
+                    else:
+                        dettaglio_stile = f"composta esclusivamente da domande di tipo: {stile_domande}."
+
+                    prompt_utente = (
+                        f"Crea una verifica scolastica per le scuole superiori basata su queste indicazioni:\n"
+                        f"- Argomento principale: {argomento}\n"
+                        f"- Struttura del test: {dettaglio_stile}\n"
+                        f"- Numero totale di quesiti: {numero_domande}\n\n"
+                        f"Fornisci il testo della verifica pronto da copiare e stampare. "
+                        f"In fondo al testo, crea una sezione ben separata chiamata 'CORRETTORE E SOLUZIONI' "
+                        f"contenente le risposte esatte per il professore."
+                    )
                     
                     risposta = client.chat.completions.create(
                         model="gpt-4o",
@@ -61,7 +78,6 @@ with tab1:
                     )
                     testo_generato = risposta.choices.message.content
                     
-                    # Mostra il risultato dentro un box di testo nella grafica
                     st.success("Verifica Generata con Successo!")
                     st.text_area("Copia il testo qui sotto:", value=testo_generato, height=400)
                 except Exception as e:
@@ -74,15 +90,12 @@ with tab2:
     st.header("Scanner e Correttore Automatico")
     st.write("Carica la foto o la scansione del foglio scritto a mano dallo studente.")
     
-    # Elementi grafici di input
     soluzioni_prof = st.text_area("Incolla qui le soluzioni corrette della verifica (o i criteri di valutazione):")
     foto_caricata = st.file_uploader("Scegli o trascina la foto della verifica (.jpg, .jpeg, .png):", type=["jpg", "jpeg", "png"])
     
-    # Se il prof carica una foto, la mostra a schermo nella grafica
     if foto_caricata is not None:
         st.image(foto_caricata, caption="Anteprima del compito dello studente", width=400)
         
-    # Bottone per attivare la correzione visiva
     if st.button("Scansiona e Correggi Compito"):
         if not client:
             st.error("Inserisci prima la tua API Key.")
@@ -91,13 +104,24 @@ with tab2:
         else:
             with st.spinner("L'IA sta leggendo la calligrafia e correggendo il compito..."):
                 try:
-                    # Convertiamo la foto caricata in base64 per l'IA
                     bytes_data = foto_caricata.getvalue()
                     base64_image = base64.b64encode(bytes_data).decode('utf-8')
                     
+                    # Istruzioni di correzione forzate in italiano con voti italiani
                     prompt_sistema = (
-                        "Sei un professore digitale. Leggi la scrittura sullo studente nella foto, "
-                        "confrontala con le soluzioni e restituisci: VOTO FINALE (1-10), ERRORI TROVATI e CONSIGLIO."
+                        "Sei un professore italiano e ti esprimi rigorosamente in lingua italiana. "
+                        "Analizza l'immagine della verifica dello studente, decifra la sua scrittura a mano "
+                        "e confrontala con le soluzioni fornite. Valuta il compito usando i voti da 1 a 10 "
+                        "(puoi usare anche i mezzi voti come 6+, 7.5, 8- se necessario). "
+                        "Restituisci la risposta scritta bene in italiano con questa precisa struttura:\n\n"
+                        "### 📊 VALUTAZIONE FINALE\n"
+                        "**Voto proposto:** [Inserisci voto]\n\n"
+                        "### ✅ RISPOSTE CORRETTE\n"
+                        "[Elenca cosa ha fatto bene]\n\n"
+                        "### ❌ ERRORI RISCONTRATI\n"
+                        "[Spiega cosa ha sbagliato e perché]\n\n"
+                        "### 💬 NOTA DEL DOCENTE\n"
+                        "[Un breve commento in italiano per spiegare lo studente come migliorare]"
                     )
                     
                     risposta = client.chat.completions.create(
@@ -107,7 +131,7 @@ with tab2:
                             {
                                 "role": "user",
                                 "content": [
-                                    {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"},
+                                    {"type": "text", "text": f"Ecco il correttore ufficiale con le soluzioni: {soluzioni_prof}"},
                                     {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
                                 ]
                             }
@@ -115,7 +139,6 @@ with tab2:
                         temperature=0.2
                     )
                     
-                    # Mostra l'esito della correzione nella grafica
                     st.success("Correzione Completata!")
                     st.markdown(risposta.choices.message.content)
                 except Exception as e:

@@ -34,7 +34,6 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
-# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
@@ -47,13 +46,11 @@ if GITHUB_TOKEN:
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
-# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
-# Caricamento dinamico degli utenti dai Secrets di Streamlit
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -84,7 +81,7 @@ if not st.session_state["autenticato"]:
         else:
             st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop() # Blocca l'esecuzione se non si è loggati
+    st.stop()
 
 # ==========================================================
 # INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
@@ -92,7 +89,6 @@ if not st.session_state["autenticato"]:
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
-# Pulsante per effettuare il Logout
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -101,7 +97,6 @@ if st.sidebar.button("Disconnetti / Esci"):
 if not GITHUB_TOKEN:
     st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
-# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -138,8 +133,10 @@ with tab1:
                         {"role": "user", "content": prompt_utente}
                     ]
                 )
-                # FIX COMPLETO: Ripristinato l'indice [0] corretto richiesto dall'SDK
-                st.session_state["testo_verifica"] = risposta.choices.message.content
+                
+                # ESTRATTORE DI SICUREZZA DIZIONARIO STANDARD (Compatibile con ogni versione)
+                dati_risposta = risposta.model_dump()
+                st.session_state["testo_verifica"] = dati_risposta["choices"][0]["message"]["content"]
                 st.success("Verifica Generata con Successo!")
 
     if "testo_verifica" in st.session_state:
@@ -205,3 +202,6 @@ with tab2:
                     messages=[msg_sistema, msg_utente],
                     temperature=0.2
                 )
+                
+                # ESTRATTORE DI SICUREZZA DIZIONARIO STANDARD (Compatibile con ogni versione)
+                dati_correzione = risposta.model_dump()

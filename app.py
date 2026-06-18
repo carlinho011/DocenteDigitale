@@ -11,13 +11,21 @@ st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝"
 st.markdown("""
     <style>
     @media print {
-        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"] {
-            display: none !map-important;
+        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button {
+            display: none !important;
             visibility: hidden;
         }
         .main .block-container {
             padding-top: 0px;
             padding-bottom: 0px;
+        }
+        /* Classe per forzare l'interruzione di pagina nella stampa */
+        .salto-pagina {
+            page-break-before: always;
+            break-before: page;
+            margin-top: 50px;
+            border-top: 2px dashed #333;
+            padding-top: 20px;
         }
     }
     </style>
@@ -26,31 +34,34 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
 if GITHUB_TOKEN:
     client = OpenAI(
-        base_url="https://models.inference.ai.azure.com",  # URL CORRETTO per GitHub Models
+        base_url="https://azure.com",  # Endpoint corretto per GitHub Models
         api_key=GITHUB_TOKEN
     )
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
+# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
+# Caricamento dinamico degli utenti dai Secrets di Streamlit
+UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
         UTENTI_ATTIVI = json.loads(st.secrets["UTENTI_ABILITATI"])
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
-else:
-    UTENTI_ATTIVI = UTENTI_DEFAULT
 
+# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -73,7 +84,7 @@ if not st.session_state["autenticato"]:
         else:
             st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
             
-    st.stop()
+    st.stop() # Blocca l'esecuzione se non si è loggati
 
 # ==========================================================
 # INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
@@ -81,6 +92,7 @@ if not st.session_state["autenticato"]:
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
 
+# Pulsante per effettuare il Logout
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -89,6 +101,7 @@ if st.sidebar.button("Disconnetti / Esci"):
 if not GITHUB_TOKEN:
     st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
+# SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -110,13 +123,15 @@ with tab1:
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
                 try:
-                    prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO."
+                    # Istruzione al sistema per marcare le soluzioni con un tag dedicato
+                    prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMNETE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
+                    
                     if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
                         dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
                     else:
                         dettaglio_stile = f"composta esclusivamente da domande di tipo: {stile_domande}."
 
-                    prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo."
+                    prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                     
                     risposta = client.chat.completions.create(
                         model="gpt-4o", 
@@ -130,19 +145,38 @@ with tab1:
                 except Exception as e:
                     st.error(f"Errore: {str(e)}")
 
-    # Se la verifica è stata generata, mostra l'anteprima leggibile e il pulsante Stampa
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
         
-        # FIX: Testo nero forzato e font leggibile
-        testo_formattato_v = st.session_state['testo_verifica'].replace('\n', '<br>')
-        st.markdown(f"""
-            <div style='background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6;'>
-                {testo_formattato_v}
-            </div>
-        """, unsafe_allow_html=True)
+        # Sostituzione dei newline (\n) in tag di interruzione HTML (<br>)
+        testo_html = st.session_state['testo_verifica'].replace('\n', '<br>')
         
-        st.html("""
+        # Sostituzione del tag di controllo con la classe CSS di interruzione pagina
+        blocco_salto_pagina = "<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3></div>"
+        testo_elaborato = testo_html.replace("[SOLUZIONI]", blocco_salto_pagina).replace("### Soluzioni", "").replace("## Soluzioni", "")
+        
+        # Intestazione studente (Nome, Cognome, Data, Classe)
+        intestazione_studente = """
+        <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
+            <table style='width: 100%; border: none;'>
+                <tr>
+                    <td style='width: 50%; font-weight: bold;'>Istituto Scolastico: ____________________</td>
+                    <td style='width: 50%; font-weight: bold; text-align: right;'>Data: ____/____/________</td>
+                </tr>
+                <tr>
+                    <td style='padding-top: 10px;'>Alunno/a: ______________________________</td>
+                    <td style='padding-top: 10px; text-align: right;'>Classe: ________________</td>
+                </tr>
+            </table>
+        </div>
+        """
+        
+        # Rendering dell'intera pagina tramite st.html() per interpretare correttamente la formattazione
+        st.html(f"""
+            <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
+                {intestazione_studente}
+                {testo_elaborato}
+            </div>
             <br>
             <button onclick="window.print()" style="
                 background-color: #4CAF50; 
@@ -152,7 +186,7 @@ with tab1:
                 border-radius: 4px; 
                 cursor: pointer; 
                 font-size: 16px;">
-                🖨️ Stampa questa Verifica
+                🖨️ Stampa Verifica (Soluzioni separate)
             </button>
         """)
 
@@ -175,67 +209,3 @@ with tab2:
                 try:
                     bytes_data = foto_caricata.getvalue()
                     base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                    prompt_sistema = "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."
-                    
-                    risposta = client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": [
-                                {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                            ]}
-                        ],
-                        temperature=0.2
-                    )
-                    st.session_state["testo_correzione"] = risposta.choices[0].message.content
-                    st.success("Correzione Completata!")
-                except Exception as e:
-                    st.error(f"Errore durante la scansione: {str(e)}")
-
-    # Se la correzione esiste, mostra l'anteprima leggibile e il pulsante per stamparla
-    if "testo_correzione" in st.session_state:
-        st.subheader("Report della Correzione")
-        
-        # FIX: Testo nero forzato e font leggibile
-        testo_formattato_c = st.session_state['testo_correzione'].replace('\n', '<br>')
-        st.markdown(f"""
-            <div style='background-color: #fffafd; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ffeeba; font-family: sans-serif; line-height: 1.6;'>
-                {testo_formattato_c}
-            </div>
-        """, unsafe_allow_html=True)
-        
-        st.html("""
-            <br>
-            <button onclick="window.print()" style="
-                background-color: #008CBA; 
-                color: white; 
-                padding: 12px 24px; 
-                border: none; 
-                border-radius: 4px; 
-                cursor: pointer; 
-                font-size: 16px;">
-                🖨️ Stampa Report Correzione
-            </button>
-        """)
-
-    # Se la correzione esiste, mostra l'anteprima e il pulsante per stamparla
-    if "testo_correzione" in st.session_state:
-        st.subheader("Report della Correzione")
-        st.markdown(f"<div style='background-color: #fff3cd; padding: 20px; border-radius: 5px; border: 1px solid #ffeeba;'>{st.session_state['testo_correzione'].replace('\n', '<br>')}</div>", unsafe_allow_html=True)
-        
-        st.html("""
-            <br>
-            <button onclick="window.print()" style="
-                background-color: #008CBA; 
-                color: white; 
-                padding: 12px 24px; 
-                border: none; 
-                border-radius: 4px; 
-                cursor: pointer; 
-                font-size: 16px;">
-                🖨️ Stampa Report Correzione
-            </button>
-        """)
-
-

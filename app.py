@@ -58,6 +58,7 @@ if "UTENTI_ABILITATI" in st.secrets:
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
 
+# Controllo dello stato di autenticazione dell'utente
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -189,7 +190,7 @@ with tab2:
                 msg_sistema = {"role": "system", "content": "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."}
                 testo_utente = {"type": "text", "text": f"Soluzioni del professore: {soluzioni_prof}"}
                 immagine_utente = {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                msg_utente = {"role": "user", "content": [testo_utente, immagine_utente]}
+                msg_utente = {"role": "user", "content": [testo_utente, imagen_utente]}
                 
                 risposta = client.chat.completions.create(
                     model="gpt-4o-mini",

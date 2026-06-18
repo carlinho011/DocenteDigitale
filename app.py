@@ -1,34 +1,27 @@
 import streamlit as st
 import os
 import base64
+import json
 from openai import OpenAI
-from openai import OpenAI
-
-# ❌ VECCHIA CONFIGURAZIONE (OpenAI)
-# client = OpenAI(api_key="sk-...")
-
-#  CONFIGURAZIONE AGGIORNATA (GitHub Models)
-client = OpenAI(
-    base_url="https://azure.com",
-    api_key="IL_TUO_TOKEN_GITHUB_QUI"
-)
-
-# Ricordati di usare un modello disponibile su GitHub (es. "gpt-4o" o "Phi-3-mini")
-response = client.chat.completions.create(
-    messages=[{"role": "user", "content": "Ciao!"}],
-    model="gpt-4o" 
-)
-print(response.choices[0].message.content)
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# LETTURA DELLA CHIAVE OPENAI (Nascosta nei Secrets)
-OPENAI_KEY = os.environ.get("OPENAI_API_KEY", "")
-client = OpenAI(api_key=OPENAI_KEY) if OPENAI_KEY else None
+# ==========================================================
+# CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
+# ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
+GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
+
+client = None
+if GITHUB_TOKEN:
+    client = OpenAI(
+        base_url="https://azure.com",  # Endpoint corretto per GitHub Models
+        api_key=GITHUB_TOKEN
+    )
 
 # ==========================================================
-# METODO 1: GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
+# GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
 # Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
@@ -40,7 +33,6 @@ UTENTI_DEFAULT = {
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
-        import json
         UTENTI_ATTIVI = json.loads(st.secrets["UTENTI_ABILITATI"])
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
@@ -82,8 +74,8 @@ if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["utente_connesso"] = ""
     st.rerun()
 
-if not OPENAI_KEY:
-    st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura la API KEY nei Secrets).")
+if not GITHUB_TOKEN:
+    st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
 
 # SCHEDE DI NAVIGAZIONE IN ITALIANO
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
@@ -101,7 +93,7 @@ with tab1:
     
     if st.button("Genera Testo Verifica"):
         if not client:
-            st.error("Il sistema non è configurato con OpenAI.")
+            st.error("Il sistema non è configurato correttamente con il token di GitHub.")
         elif not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
@@ -115,9 +107,15 @@ with tab1:
 
                     prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo."
                     
-                    risposta = client.chat.completions.create(model="gpt-4o", messages=[{"role": "system", "content": prompt_sistema}, {"role": "user", "content": prompt_utente}])
+                    risposta = client.chat.completions.create(
+                        model="gpt-4o", 
+                        messages=[
+                            {"role": "system", "content": prompt_sistema}, 
+                            {"role": "user", "content": prompt_utente}
+                        ]
+                    )
                     st.success("Verifica Generata con Successo!")
-                    st.text_area("Copia il testo qui sotto:", value=risposta.choices.message.content, height=400)
+                    st.text_area("Copia il testo qui sotto:", value=risposta.choices[0].message.content, height=400)
                 except Exception as e:
                     st.error(f"Errore: {str(e)}")
 
@@ -132,7 +130,7 @@ with tab2:
         
     if st.button("Scansiona e Correggi Compito"):
         if not client:
-            st.error("Il sistema non è configurato con OpenAI.")
+            st.error("Il sistema non è configurato correttamente con il token di GitHub.")
         elif not soluzioni_prof or not foto_caricata:
             st.error("Devi inserire sia le soluzioni sia la foto del compito!")
         else:
@@ -146,11 +144,15 @@ with tab2:
                         model="gpt-4o",
                         messages=[
                             {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": [{"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}]}
+                            {"role": "user", "content": [
+                                {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
+                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
+                            ]}
                         ],
                         temperature=0.2
                     )
                     st.success("Correzione Completata!")
-                    st.markdown(risposta.choices.message.content)
+                    st.markdown(risposta.choices[0].message.content)
                 except Exception as e:
                     st.error(f"Errore durante la scansione: {str(e)}")
+

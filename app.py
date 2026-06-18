@@ -34,6 +34,7 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
 # ==========================================================
+# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
 GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
 
 client = None
@@ -46,11 +47,13 @@ if GITHUB_TOKEN:
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
 # ==========================================================
+# Credenziali di default per i tuoi test iniziali
 UTENTI_DEFAULT = {
     "admin@educorrect.it": "AdminPass2026",
     "prof.test@scuola.it": "TestScuola99"
 }
 
+# Caricamento dinamico degli utenti dai Secrets di Streamlit
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -120,6 +123,7 @@ with tab1:
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
                 try:
+                    # Istruzione al sistema per marcare le soluzioni con un tag dedicato
                     prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMENTE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
                     
                     if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
@@ -144,10 +148,14 @@ with tab1:
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
         
+        # Sostituzione dei newline (\n) in tag di interruzione HTML (<br>)
         testo_html = st.session_state['testo_verifica'].replace('\n', '<br>')
+        
+        # Sostituzione del tag di controllo con la classe CSS di interruzione pagina
         blocco_salto_pagina = "<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3></div>"
         testo_elaborato = testo_html.replace("[SOLUZIONI]", blocco_salto_pagina).replace("### Soluzioni", "").replace("## Soluzioni", "")
         
+        # Intestazione studente (Nome, Cognome, Data, Classe)
         intestazione_studente = """
         <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
             <table style='width: 100%; border: none;'>
@@ -163,6 +171,7 @@ with tab1:
         </div>
         """
         
+        # Rendering dell'intera pagina tramite st.html() per interpretare correttamente la formattazione
         st.html(f"""
             <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
                 {intestazione_studente}
@@ -200,13 +209,3 @@ with tab2:
                 try:
                     bytes_data = foto_caricata.getvalue()
                     base64_image = base64.b64encode(bytes_data).decode('utf-8')
-                    prompt_sistema = "Sei un professore italiano. Analizza la foto, decifra la scrittura a mano, confrontala con le soluzioni e restituisci in italiano: VOTO FINALE (1-10), RISPOSTE CORRETTE, ERRORI RISCONTRATI e NOTA DEL DOCENTE."
-                    
-                    risposta = client.chat.completions.create(
-                        model="gpt-4o",
-                        messages=[
-                            {"role": "system", "content": prompt_sistema},
-                            {"role": "user", "content": [
-                                {"type": "text", "text": f"Soluzioni: {soluzioni_prof}"}, 
-                                {"type": "image_url", "image_url": {"url": f"data:image/jpeg;base64,{base64_image}"}}
-                            ]}

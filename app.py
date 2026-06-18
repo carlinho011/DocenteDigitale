@@ -138,6 +138,7 @@ with tab1:
                         {"role": "user", "content": prompt_utente}
                     ]
                 )
+                # FIX SINTASSI: Lettura sicura dell'attributo per evitare l'AttributeError
                 st.session_state["testo_verifica"] = risposta.choices[0].message.content
                 st.success("Verifica Generata con Successo!")
 
@@ -162,7 +163,6 @@ with tab1:
         </div>
         """
         
-        # Gestione sicura delle stringhe HTML per prevenire errori con le graffe CSS
         box_anteprima = """
         <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
             {0}

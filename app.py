@@ -55,7 +55,7 @@ class PDFVerifica(FPDF):
         self.set_font("Times", "I", 9)
         self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, "C")
 
-def genera_file_pdf(argomento, testo_compito, testo_soluzioni=None):
+def genera_file_pdf(argomento, difficolta, testo_compito, testo_soluzioni=None):
     pdf = PDFVerifica()
     pdf.add_page()
     
@@ -67,7 +67,7 @@ def genera_file_pdf(argomento, testo_compito, testo_soluzioni=None):
     pdf.cell(80, 6, "Classe: ____________  Sez. ____", 0, 1, "R")
     pdf.ln(4)
     pdf.set_font("Arial", "B", 12)
-    pdf.cell(110, 6, "Materia: Verifica scritta di approfondimento", 0, 0, "L")
+    pdf.cell(110, 6, f"Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})", 0, 0, "L")
     pdf.cell(80, 6, f"Oggetto: {argomento.capitalize()}", 0, 1, "R")
     pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
     pdf.ln(8)
@@ -153,11 +153,14 @@ tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"]
 with tab1:
     st.header("Generatore di Compiti in Classe (Livello Scuole Superiori)")
     
-    col1, col2 = st.columns(2)
+    col1, col2, col3 = st.columns(3)
     with col1:
         argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani...")
     with col2:
         stile_domande = st.selectbox("Tipo di domande:", ["Domande miste (Vero/Falso, Crocette, Aperte)", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
+    with col3:
+        # NUOVO MENU A TENDINA PER LA DIFFICOLTÀ
+        difficolta = st.selectbox("Livello di difficoltà:", ["facile", "media", "difficile"])
     
     numero_domande = st.slider("Numero di domande totali:", min_value=1, max_value=20, value=5)
     
@@ -167,12 +170,14 @@ with tab1:
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito per le superiori..."):
                 prompt_sistema = (
-                    "Sei un assistant didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
+                    "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello di complessità deve essere calibrato per studenti delle scuole superiori. "
-                    "Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
+                    f"Il livello di complessità generale deve essere tassativamente calibrato come '{difficolta}' per gli standard delle scuole superiori. "
+                    "Formatta l'intero output in testo chiaro (Markdown di base). "
+                    "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
                 )
-                prompt_utente = f"Crea una verifica superiore su '{argomento}'. Tipo: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
+                
+                prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
                 
                 try:
                     if usa_sdk_nuovo:
@@ -187,11 +192,11 @@ with tab1:
                         testo_generato = risposta.text
                     
                     st.session_state["testo_verifica"] = testo_generato
-                    st.success("Verifica generata!")
+                    st.success(f"Verifica (Difficoltà: {difficolta.upper()}) generata con successo!")
                 except Exception as e:
                     st.error(f"⚠️ Errore: {e}")
 
-    # GESTIONE ESPORTAZIONE IN PDF REALE E ANTEPRIMA GRAFICA
+    # RENDERING ESPORTAZIONE E ANTEPRIMA GRAFICA FOGLIO WORD
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
@@ -206,14 +211,13 @@ with tab1:
             soluzioni_testo_puro = None
 
         try:
-            pdf_raw = genera_file_pdf(argomento, compito_testo_puro, soluzioni_testo_puro)
-            # RISOLUZIONE BUG: Forza la conversione del bytearray in oggetto bytes compatibile con Streamlit
+            pdf_raw = genera_file_pdf(argomento, difficolta, compito_testo_puro, soluzioni_testo_puro)
             pdf_bytes = bytes(pdf_raw)
             
             st.download_button(
                 label="📥 Scarica Verifica in formato PDF (Pronta da stampare)",
                 data=pdf_bytes,
-                file_name=f"verifica_{argomento.lower().replace(' ', '_')}.pdf",
+                file_name=f"verifica_{difficolta}_{argomento.lower().replace(' ', '_')}.pdf",
                 mime="application/pdf",
                 help="Salva la verifica direttamente in PDF sul tuo dispositivo"
             )
@@ -221,7 +225,3 @@ with tab1:
             st.error(f"⚠️ Impossibile generare il PDF: {pdf_err}")
 
         # COSTRUZIONE DELL'ANTEPRIMA GRAFICA WEB (Foglio A4 bianco simulato)
-        testo_html = testo_grezzo.replace('\n', '<br>')
-        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
-        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
-

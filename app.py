@@ -212,11 +212,10 @@ with tab1:
         # Messaggio informativo stabile per l'utente
         st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera. Il sistema nasconderà automaticamente i menù del sito lasciando solo il foglio bianco pronto per la stampa o il salvataggio in PDF.")
 
-        # Elaborazione stringhe pulita
+        # Gestione e formattazione con allineamento corretto (Risoluzione IndentationError)
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
             soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
-            
             corpo_documento_html = f"{compito_pulito}<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>{soluzioni_pulite}</div>"
         else:

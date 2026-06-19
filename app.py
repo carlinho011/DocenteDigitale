@@ -209,14 +209,10 @@ with tab1:
         
         st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera per aprire il pannello di stampa o salvare in PDF.")
 
-        # Trasformazione del testo in HTML puro in modo lineare per evitare SyntaxError delle f-string
+        # Trasformazione del testo in HTML puro in modo lineare
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
         corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
 
-        # Intestazione formale scolastica (Testo HTML normale privo di nidificazioni instabili)
+        # Intestazione formale scolastica definita in un'unica stringa monoriga senza interruzioni di sintassi
         oggetto_titolo = argomento.capitalize()
-        intestazione_word_html = (
-            "<table class='tabella-intestazione'>"
-            "<tr>"
-            "<td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td>"

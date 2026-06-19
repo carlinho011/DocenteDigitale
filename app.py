@@ -1,8 +1,7 @@
 import streamlit as st
 import os
-import base64
 import json
-from openai import OpenAI
+from google import genai
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -32,17 +31,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Sicura tramite Streamlit Secrets)
+# CONFIGURAZIONE CLIENT (Ufficiale Google GenAI SDK)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Configurazione del client compatibile con OpenAI (URL corretto senza slash finale)
-client = OpenAI(
-    base_url="https://googleapis.com",
-    api_key=st.secrets["GEMINI_KEY"]
-)
+# Inizializzazione stabile con l'SDK nativo di Google
+client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
@@ -127,30 +123,17 @@ with tab1:
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
                 try:
-                    risposta = client.chat.completions.create(
-                        model="gemini-2.5-flash", 
-                        messages=[
-                            {"role": "system", "content": prompt_sistema}, 
-                            {"role": "user", "content": prompt_utente}
-                        ]
+                    # Chiamata nativa SDK Google senza rischi di 404
+                    risposta = client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=prompt_utente,
+                        config={
+                            'system_instruction': prompt_sistema,
+                            'temperature': 0.7
+                        }
                     )
                     
-                    # Estrazione del testo con gestione di compatibilità per liste e oggetti
-                    testo_pulito = ""
-                    if hasattr(risposta, "choices"):
-                        scelte = risposta.choices
-                        if len(scelte) > 0:
-                            prima_scelta = scelte[0]
-                            if hasattr(prima_scelta, "message"):
-                                testo_pulito = prima_scelta.message.content
-                            elif isinstance(prima_scelta, dict) and "message" in prima_scelta:
-                                testo_pulito = prima_scelta["message"].get("content", "")
-                    elif isinstance(risposta, dict) and "choices" in risposta:
-                        testo_pulito = risposta["choices"][0]["message"]["content"]
-                    else:
-                        testo_pulito = str(risposta)
-                    
-                    st.session_state["testo_verifica"] = testo_pulito
+                    st.session_state["testo_verifica"] = risposta.text
                     st.success("Operazione completata con Gemini!")
                 
                 except Exception as e:

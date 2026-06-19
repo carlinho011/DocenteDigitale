@@ -220,11 +220,9 @@ with tab1:
             </button>
         """, unsafe_allow_html=True)
 
-        # Elaborazione stringhe pulita senza bug di concatenazione o split errati
+        # Gestione e formattazione dei blocchi di testo senza l'uso di parentesi multilinea
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
             soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
             
-            corpo_documento_html = (
-                compito_pulito +

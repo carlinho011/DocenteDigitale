@@ -1,18 +1,17 @@
 import streamlit as st
 import os
 import json
-from fpdf import FPDF
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Anteprima a schermo stile foglio A4)
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE
 st.markdown("""
     <style>
     .foglio-word {
         background-color: #ffffff !important;
         color: #000000 !important;
-        padding: 50px 60px !important;
+        padding: 40px 50px !important;
         margin: 20px auto !important;
         max-width: 800px !important;
         box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.15) !important;
@@ -45,52 +44,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CLASSE PER LA GENERAZIONE DEL FILE PDF COMPATIBILE
-# ==========================================================
-class PDFVerifica(FPDF):
-    def header(self):
-        pass
-    def footer(self):
-        self.set_y(-15)
-        self.set_font("Times", "I", 9)
-        self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, "C")
-
-def genera_file_pdf(argomento, difficolta, testo_compito, testo_soluzioni=None):
-    pdf = PDFVerifica()
-    pdf.add_page()
-    
-    # Intestazione formale scolastica nel PDF
-    pdf.set_font("Arial", "B", 11)
-    pdf.cell(110, 6, "Istituto d'Istruzione Superiore", 0, 0, "L")
-    pdf.cell(80, 6, "Data: ____/____/________", 0, 1, "R")
-    pdf.cell(110, 6, "Alunno/a: _____________________________________", 0, 0, "L")
-    pdf.cell(80, 6, "Classe: ____________  Sez. ____", 0, 1, "R")
-    pdf.ln(4)
-    pdf.set_font("Arial", "B", 12)
-    pdf.cell(110, 6, f"Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})", 0, 0, "L")
-    pdf.cell(80, 6, f"Oggetto: {argomento.capitalize()}", 0, 1, "R")
-    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
-    pdf.ln(8)
-    
-    # Corpo del compito
-    pdf.set_font("Times", "", 11)
-    testo_compito_codificato = testo_compito.encode('latin-1', 'replace').decode('latin-1')
-    pdf.multi_cell(0, 6, testo_compito_codificato)
-    
-    # Sezione soluzioni
-    if testo_soluzioni:
-        pdf.add_page()
-        pdf.set_font("Arial", "B", 12)
-        pdf.cell(0, 8, "CHIAVE DI CORREZIONE (FOGLIO DOCENTE)", "B", 1, "L")
-        pdf.ln(6)
-        pdf.set_font("Times", "", 11)
-        testo_soluzioni_codificato = testo_soluzioni.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 6, testo_soluzioni_codificato)
-        
-    return pdf.output()
-
-# ==========================================================
-# CONFIGURAZIONE CLIENT (Doppio supporto SDK Google)
+# CONFIGURAZIONE CLIENT (Google GenAI SDK)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
@@ -100,11 +54,9 @@ try:
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-    usa_sdk_nuovo = True
-except ImportError:
-    import google.generativeai as dg_genai
-    dg_genai.configure(api_key=st.secrets["GEMINI_KEY"])
-    usa_sdk_nuovo = False
+except Exception as e:
+    st.error(f"Errore caricamento SDK: {e}")
+    st.stop()
 
 # ==========================================================
 # GESTIONE ACCOUNT (LOGIN)
@@ -150,17 +102,18 @@ if st.sidebar.button("Disconnetti / Esci"):
         del st.session_state["analisi_correzione"]
     st.rerun()
 
+# Generazione delle schede
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
 with tab1:
-    st.header("Generatore di Compiti in Classe (Livello Scuole Superiori)")
+    st.header("Generatore di Compiti in Classe")
     
     col1, col2, col3 = st.columns(3)
     with col1:
         argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani...")
     with col2:
-        stile_domande = st.selectbox("Tipo di domande:", ["Domande miste (Vero/Falso, Crocette, Aperte)", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
+        stile_domande = st.selectbox("Tipo di domande:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     with col3:
         difficolta = st.selectbox("Livello di difficoltà:", ["facile", "media", "difficile"])
     
@@ -170,54 +123,78 @@ with tab1:
         if not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
-            with st.spinner("L'intelligenza artificiale sta scrivendo il compito per le superiori..."):
+            with st.spinner("Generazione compito in corso..."):
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    f"Il livello di complessità generale deve essere tassativamente calibrato come '{difficolta}' per gli standard delle scuole superiori. "
-                    "Formatta l'intero output in testo chiaro (Markdown di base). "
-                    "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
+                    f"Il livello di complessità generale deve essere calibrato come '{difficolta}' per gli standard delle scuole superiori. "
+                    "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
                 )
-                prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
+                prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    if usa_sdk_nuovo:
-                        risposta = client.models.generate_content(
-                            model='gemini-2.5-flash', contents=prompt_utente,
-                            config={'system_instruction': prompt_sistema, 'temperature': 0.6}
-                        )
-                        testo_generato = risposta.text
-                    else:
-                        model = dg_genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=prompt_sistema)
-                        risposta = model.generate_content(prompt_utente)
-                        testo_generato = risposta.text
-                    
-                    st.session_state["testo_verifica"] = testo_generato
-                    st.success(f"Verifica (Difficoltà: {difficolta.upper()}) generata con successo!")
+                    risposta = client.models.generate_content(
+                        model='gemini-2.5-flash', contents=prompt_utente,
+                        config={'system_instruction': prompt_sistema, 'temperature': 0.6}
+                    )
+                    st.session_state["testo_verifica"] = risposta.text
+                    st.success("Verifica generata!")
                 except Exception as e:
                     st.error(f"⚠️ Errore: {e}")
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
-        st.write("### 📄 Esporta e Visualizza")
-
-        if "[SOLUZIONI]" in testo_grezzo:
-            parti_testo = testo_grezzo.split("[SOLUZIONI]")
-            compito_testo_puro = parti_testo[0].strip()
-            soluzioni_testo_puro = parti_testo[1].strip()
-        else:
-            compito_testo_puro = testo_grezzo.strip()
-            soluzioni_testo_puro = None
-
-        try:
-            pdf_raw = genera_file_pdf(argomento, difficolta, compito_testo_puro, soluzioni_testo_puro)
-            pdf_bytes = bytes(pdf_raw)
-            st.download_button(
-                label="📥 Scarica Verifica in formato PDF (Pronta da stampare)",
-                data=pdf_bytes, file_name=f"verifica_{difficolta}_{argomento.lower().replace(' ', '_')}.pdf",
-                mime="application/pdf"
-            )
-        except Exception as pdf_err:
-            st.error(f"⚠️ Impossibile generare il PDF: {pdf_err}")
-
+        
+        st.info("💡 Premi **CTRL + P** (Windows) o **CMD + P** (Mac) per stampare direttamente o salvare in PDF.")
+        
         testo_html = testo_grezzo.replace('\n', '<br>')
+        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
+        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
+
+        intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
+        st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
+
+
+# --- SCHEDA 2: SCANSIONA E CORREGGI ---
+with tab2:
+    st.header("🔍 Correttore Intelligente di Compiti")
+    st.write("Inserisci l'elaborato dell'alunno per correggerlo ed emettere il voto in decimi.")
+    
+    col_input, col_criteri = st.columns(2)
+    
+    with col_input:
+        # Se usi questo uploader dallo smartphone, si apre un menu che ti fa scegliere "Scatta Foto" o "Libreria foto"
+        file_compito = st.file_uploader("📂 Carica file (Immagine del compito o PDF):", type=["png", "jpg", "jpeg", "pdf"])
+        testo_manuale = st.text_area("✍️ Oppure incolla qui il testo scritto a mano:", height=150, placeholder="Risposte dello studente...")
+        
+    with col_criteri:
+        griglia_riferimento = st.text_area("🔑 Criteri di valutazione o soluzioni di riferimento:", 
+                                           value=st.session_state.get("testo_verifica", ""), height=230,
+                                           placeholder="I dati della verifica generata a sinistra vengono copiati qui in automatico.")
+
+    if st.button("🔎 Avvia Correzione Automatica"):
+        if not file_compito and not testo_manuale:
+            st.error("Inserisci un compito inserendo del testo o caricando una foto.")
+        else:
+            with st.spinner("Analisi del compito e calcolo del voto in corso..."):
+                prompt_correzione_sistema = (
+                    "Sei un docente di scuola superiore italiana severo, preciso e costruttivo. "
+                    "Analizza il compito dello studente confrontandolo con i criteri forniti. "
+                    "Restituisci l'analisi strutturata in italiano secondo questo schema:\n"
+                    "1. Riassunto del compito analizzato.\n"
+                    "2. Analisi degli errori rilevati.\n"
+                    "3. Elementi positivi riscontrati.\n"
+                    "4. Suggerimenti mirati.\n"
+                    "5. VALUTAZIONE FINALE: Voto numerico in decimi (da 2 a 10)."
+                )
+                
+                contenuto_richiesta = []
+                testo_da_inviare = f"Compito dello studente:\n{testo_manuale}\n\nCriteri/Soluzioni:\n{griglia_riferimento}"
+                contenuto_richiesta.append(testo_da_inviare)
+                
+                if file_compito:
+                    file_bytes = file_compito.read()
+                    contenuto_richiesta.append(types.Part.from_bytes(data=file_bytes, mime_type=file_compito.type))
+                
+                try:
+                    risposta_correzione = client.models.generate_content(

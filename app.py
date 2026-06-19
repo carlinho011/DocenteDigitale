@@ -34,14 +34,13 @@ st.markdown("""
 # ==========================================================
 # CONFIGURAZIONE CLIENT (Sicura tramite Streamlit Secrets)
 # ==========================================================
-# Controlla se la chiave Gemini è configurata nei Secrets
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Configurazione del client compatibile con OpenAI (Rimosso 'openai/' dall'endpoint per evitare il 404)
+# Configurazione del client compatibile con OpenAI
 client = OpenAI(
-    base_url="https://generativelanguage.googleapis.com/v1beta/",
+    base_url="https://googleapis.com",
     api_key=st.secrets["GEMINI_KEY"]
 )
 
@@ -136,12 +135,19 @@ with tab1:
                         ]
                     )
                     
+                    # ESTRAZIONE DI SICUREZZA ADATTA A TUTTE LE VERSIONI DI OPENAI
                     testo_pulito = ""
-                    if isinstance(risposta, dict):
-                        testo_pulito = risposta["choices"]["message"]["content"]
-                    elif hasattr(risposta, "choices"):
-                        scelte = getattr(risposta, "choices")
-                        testo_pulito = scelte.message.content if isinstance(scelte, list) else scelte.message.content
+                    if hasattr(risposta, "choices") and len(risposta.choices) > 0:
+                        scelta = risposta.choices[0]
+                        # Supporto sia per oggetti moderni (.message.content) che dizionari/liste vecchie
+                        if hasattr(scelta, "message") and hasattr(scelta.message, "content"):
+                            testo_pulito = scelta.message.content
+                        elif isinstance(scelta, dict) and "message" in scelta:
+                            testo_pulito = scelta["message"].get("content", "")
+                        else:
+                            testo_pulito = getattr(scelta, "text", str(scelta))
+                    elif isinstance(risposta, dict) and "choices" in risposta:
+                        testo_pulito = risposta["choices"][0]["message"]["content"]
                     else:
                         testo_pulito = str(risposta)
                     

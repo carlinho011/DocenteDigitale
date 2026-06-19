@@ -45,14 +45,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google Generative AI SDK Stabile)
+# CONFIGURAZIONE CLIENT (Forzata su API v1 Stabile)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Configurazione stabile ed esente da crash del server
-genai.configure(api_key=st.secrets["GEMINI_KEY"])
+# CORREZIONE: Inizializzazione esplicita sulla versione stabile v1 delle API di Google
+genai.configure(api_key=st.secrets["GEMINI_KEY"], client_options={"api_version": "v1"})
 
 # ==========================================================
 # GESTIONE ACCOUNT (LOGIN)
@@ -136,12 +136,13 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
+                    # Riconfigurato sul modello e canale v1 corretto
                     model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
                     risposta = model.generate_content(prompt_utente)
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
-                    st.error(f"⚠️ Errore: {e}")
+                    st.error(f"⚠️ Errore di endpoint: {e}")
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
@@ -189,12 +190,9 @@ elif modalita == "🔍 Scansiona e Correggi":
                 
                 contenuto_richiesta = []
                 
-                # Se c'è un file multimediale carichiamo l'immagine direttamente
                 if file_compito:
                     file_bytes = file_compito.read()
                     immagine_struttura = {"mime_type": file_compito.type, "data": file_bytes}
                     contenuto_richiesta.append(immagine_struttura)
                 
                 testo_da_inviare = f"Compito dello studente:\n{testo_manuale}\n\nCriteri/Soluzioni:\n{griglia_riferimento}"
-                contenuto_richiesta.append(testo_da_inviare)
-                

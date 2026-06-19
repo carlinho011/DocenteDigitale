@@ -221,4 +221,3 @@ with tab1:
             st.error(f"⚠️ Impossibile generare il PDF: {pdf_err}")
 
         testo_html = testo_grezzo.replace('\n', '<br>')
-        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"

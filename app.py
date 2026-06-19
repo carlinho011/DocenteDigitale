@@ -5,7 +5,7 @@ import json
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Foglio Word A4)
 st.markdown("""
     <style>
     .foglio-word {
@@ -88,11 +88,18 @@ if not st.session_state["autenticato"]:
     st.stop()
 
 # ==========================================================
-# INTERFACCIA PRINCIPALE
+# INTERFACCIA PRINCIPALE CON NAVIGAZIONE IN SIDEBAR
 # ==========================================================
-st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
-st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
+st.sidebar.title("🛠️ Menu EduCorrect")
+st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
 
+# Sostituzione dei Tab con un menu di selezione nativo e sicuro in Sidebar
+modalita = st.sidebar.radio(
+    "Scegli l'operazione da eseguire:",
+    ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"]
+)
+
+st.sidebar.markdown("---")
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     st.session_state["utente_connesso"] = ""
@@ -102,11 +109,12 @@ if st.sidebar.button("Disconnetti / Esci"):
         del st.session_state["analisi_correzione"]
     st.rerun()
 
-# Generazione delle schede
-tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
+# ==========================================================
+# LOGICA DI CONTROLLO DELLE SEZIONI
+# ==========================================================
 
-# --- SCHEDA 1: GENERATORE DI VERIFICHE ---
-with tab1:
+# --- SEZIONE 1: GENERATORE DI VERIFICHE ---
+if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe")
     
     col1, col2, col3 = st.columns(3)
@@ -144,7 +152,6 @@ with tab1:
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
-        
         st.info("💡 Premi **CTRL + P** (Windows) o **CMD + P** (Mac) per stampare direttamente o salvare in PDF.")
         
         testo_html = testo_grezzo.replace('\n', '<br>')
@@ -155,22 +162,21 @@ with tab1:
         st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
 
 
-# --- SCHEDA 2: SCANSIONA E CORREGGI ---
-with tab2:
+# --- SEZIONE 2: SCANSIONA E CORREGGI (SBLOCCATA DA MENU SIDEBAR) ---
+elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     st.write("Inserisci l'elaborato dell'alunno per correggerlo ed emettere il voto in decimi.")
     
     col_input, col_criteri = st.columns(2)
     
     with col_input:
-        # Se usi questo uploader dallo smartphone, si apre un menu che ti fa scegliere "Scatta Foto" o "Libreria foto"
         file_compito = st.file_uploader("📂 Carica file (Immagine del compito o PDF):", type=["png", "jpg", "jpeg", "pdf"])
         testo_manuale = st.text_area("✍️ Oppure incolla qui il testo scritto a mano:", height=150, placeholder="Risposte dello studente...")
         
     with col_criteri:
         griglia_riferimento = st.text_area("🔑 Criteri di valutazione o soluzioni di riferimento:", 
                                            value=st.session_state.get("testo_verifica", ""), height=230,
-                                           placeholder="I dati della verifica generata a sinistra vengono copiati qui in automatico.")
+                                           placeholder="I dati della verifica generata nell'altra sezione vengono copiati qui in automatico.")
 
     if st.button("🔎 Avvia Correzione Automatica"):
         if not file_compito and not testo_manuale:
@@ -194,7 +200,3 @@ with tab2:
                 
                 if file_compito:
                     file_bytes = file_compito.read()
-                    contenuto_richiesta.append(types.Part.from_bytes(data=file_bytes, mime_type=file_compito.type))
-                
-                try:
-                    risposta_correzione = client.models.generate_content(

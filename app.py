@@ -73,9 +73,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# Iniezione dello script JavaScript esterno per la conversione in PDF reale (html2pdf)
-st.markdown('<script src="https://cloudflare.com"></script>', unsafe_allow_html=True)
-
 # ==========================================================
 # CONFIGURAZIONE CLIENT (Doppio supporto SDK Google)
 # ==========================================================
@@ -206,17 +203,18 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
-    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO
+    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO (Risoluzione f-string bug)
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
         st.write("### 📄 Esporta Documento")
         
-        # Nome file dinamico basato sull'argomento scelto dal docente
-        nome_file_pdf = f"verifica_superiori_{argomento.lower().replace(' ', '_')}.pdf"
+        # Genera il nome del file in modo pulito per JavaScript
+        slug_argomento = argomento.lower().replace(' ', '_')
+        nome_file_pdf = "verifica_superiori_" + slug_argomento + ".pdf"
 
-        # PULSANTE INTERATTIVO SENZA TASTIERA: Genera ed esporta il PDF iniettando JavaScript nell'iframe
-        script_html2pdf = f"""
+        # Script HTML + JS puro senza l'uso di f-string (Nessun rischio di errore 404 o sintassi)
+        script_html2pdf = """
             <div class="no-print">
                 <button onclick="scaricaIlPDF()" style="
                     background-color: #008CBA;
@@ -227,3 +225,10 @@ with tab1:
                     cursor: pointer;
                     font-size: 16px;
                     font-weight: bold;
+                    margin-bottom: 25px;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+                ">
+                    📥 Scarica Verifica in PDF
+                </button>
+            </div>
+            

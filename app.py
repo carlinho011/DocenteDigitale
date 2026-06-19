@@ -45,14 +45,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Forzata su API v1 Stabile)
+# CONFIGURAZIONE CLIENT (Google Generative AI SDK Corretto)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# CORREZIONE: Inizializzazione esplicita sulla versione stabile v1 delle API di Google
-genai.configure(api_key=st.secrets["GEMINI_KEY"], client_options={"api_version": "v1"})
+# RISOLUZIONE BUG: Configurazione standard pulita senza parametri non accettati
+genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
 # ==========================================================
 # GESTIONE ACCOUNT (LOGIN)
@@ -136,13 +136,13 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    # Riconfigurato sul modello e canale v1 corretto
+                    # Uso corretto e standard del modello stabile
                     model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
                     risposta = model.generate_content(prompt_utente)
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
-                    st.error(f"⚠️ Errore di endpoint: {e}")
+                    st.error(f"⚠️ Errore di generazione: {e}")
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']

@@ -220,11 +220,11 @@ with tab1:
             </button>
         """, unsafe_allow_html=True)
 
-        # Elaborazione corretta della stringa HTML per evitare i SyntaxError delle f-string
+        # Elaborazione stringhe pulita senza bug di concatenazione o split errati
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
-            testo_compito_html = parti_testo[0].replace('\n', '<br>')
-            testo_soluzioni_html = parti_testo[1].replace('\n', '<br>')
+            compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
+            soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
             
             corpo_documento_html = (
-                f"{testo_compito_html}"
+                compito_pulito +

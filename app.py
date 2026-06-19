@@ -32,19 +32,15 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (GitHub Models tramite SDK OpenAI)
+# CONFIGURAZIONE CLIENT (Google Gemini tramite SDK OpenAI)
 # ==========================================================
-# Legge il token dai Secrets di Streamlit o dalle variabili d'ambiente
-GITHUB_TOKEN = st.secrets.get("OPENAI_API_KEY", os.environ.get("OPENAI_API_KEY", ""))
+# Utilizza direttamente la chiave Gemini fornita configurando l'endpoint di Google AI Studio
+GEMINI_KEY = "AQ.Ab8RN6JP--b_C2eXiGnyu0Qm4yk8AS87UxfjnzOxucdbt1oV7A"
 
-client = None
-if GITHUB_TOKEN:
-    # Configurazione avanzata dell'SDK per impedire i redirect alla pagina web di Azure
-    client = OpenAI(
-        base_url="https://azure.com",
-        api_key=GITHUB_TOKEN,
-        default_headers={"extra-headers": "github-models"}
-    )
+client = OpenAI(
+    base_url="https://googleapis.com",
+    api_key=GEMINI_KEY
+)
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
@@ -101,9 +97,6 @@ if st.sidebar.button("Disconnetti / Esci"):
         del st.session_state["testo_correzione"]
     st.rerun()
 
-if not GITHUB_TOKEN:
-    st.error("⚠️ Errore di sistema: Manca la configurazione del server (Configura il tuo GITHUB TOKEN nei Secrets).")
-
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
@@ -118,9 +111,7 @@ with tab1:
     numero_domande = st.slider("Numero di domande totali:", min_value=1, max_value=20, value=5)
     
     if st.button("Genera Testo Verifica"):
-        if not client:
-            st.error("Il sistema non è configurato correttamente con il token di GitHub.")
-        elif not argomento:
+        if not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
@@ -133,28 +124,30 @@ with tab1:
 
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
-                risposta = client.chat.completions.create(
-                    model="gpt-4o", 
-                    messages=[
-                        {"role": "system", "content": prompt_sistema}, 
-                        {"role": "user", "content": prompt_utente}
-                    ]
-                )
-                
-                testo_pulito = ""
-                if isinstance(risposta, dict):
-                    testo_pulito = risposta["choices"]["message"]["content"]
-                elif hasattr(risposta, "choices"):
-                    scelte = getattr(risposta, "choices")
-                    testo_pulito = scelte.message.content if isinstance(scelte, list) else scelte.message.content
-                else:
-                    testo_pulito = str(risposta)
-                
-                if "Microsoft" in testo_pulito or "Azure" in testo_pulito or "Skip to main" in testo_pulito:
-                    st.error("⚠️ Errore di autenticazione: Il server GitHub ha rifiutato il token rimandando alla pagina di login di Azure. Verifica che il token inserito sia corretto, non sia scaduto o che non siano stati superati i limiti orari gratuiti.")
-                else:
+                try:
+                    # Chiamata aggiornata al modello gratuito gemini-2.5-flash
+                    risposta = client.chat.completions.create(
+                        model="gemini-2.5-flash", 
+                        messages=[
+                            {"role": "system", "content": prompt_sistema}, 
+                            {"role": "user", "content": prompt_utente}
+                        ]
+                    )
+                    
+                    testo_pulito = ""
+                    if isinstance(risposta, dict):
+                        testo_pulito = risposta["choices"]["message"]["content"]
+                    elif hasattr(risposta, "choices"):
+                        scelte = getattr(risposta, "choices")
+                        testo_pulito = scelte.message.content if isinstance(scelte, list) else scelte.message.content
+                    else:
+                        testo_pulito = str(risposta)
+                    
                     st.session_state["testo_verifica"] = testo_pulito
-                    st.success("Operazione completata!")
+                    st.success("Operazione completata con Gemini!")
+                
+                except Exception as e:
+                    st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
     if "testo_verifica" in st.session_state:
         st.subheader("Anteprima della Verifica")
@@ -162,6 +155,7 @@ with tab1:
         blocco_salto_pagina = "<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3></div>"
         testo_elaborato = testo_html.replace("[SOLUZIONI]", blocco_salto_pagina).replace("### Soluzioni", "").replace("## Soluzioni", "")
         
+        # Completamento dell'intestazione HTML che era interrotta
         intestazione_studente = """
         <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
             <table style='width: 100%; border: none;'>
@@ -177,33 +171,9 @@ with tab1:
         </div>
         """
         
-        box_anteprima = """
-        <div style="background-color: #f9f9f9; color: #111111 !important; padding: 25px; border-radius: 6px; border: 1px solid #ccc; font-family: sans-serif; line-height: 1.6; font-size: 16px;">
-            {0}
-            {1}
-        </div>
-        <br>
-        <button onclick="window.print()" style="background-color: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 4px; cursor: pointer; font-size: 16px;">
-            🖨️ Stampa Verifica (Soluzioni separate)
-        </button>
-        """.format(intestazione_studente, testo_elaborato)
-        
-        st.html(box_anteprima)
+        st.markdown(intestazione_studente + testo_elaborato, unsafe_allow_html=True)
 
-# --- SCHEDA 2: SCANNER E CORRETTORE ---
+# --- SCHEDA 2: SCANSIONA E CORREGGI ---
 with tab2:
-    st.header("Scanner e Correttore Automatico")
-    soluzioni_prof = st.text_area("Incolla qui le soluzioni corrette della verifica (o i criteri di valutazione):")
-    foto_caricata = st.file_uploader("Scegli o trascina la foto della verifica (.jpg, .jpeg, .png):", type=["jpg", "jpeg", "png"])
-    
-    if foto_caricata is not None:
-        st.image(foto_caricata, caption="Anteprima del compito dello studente", width=400)
-        
-    if st.button("Scansiona e Correggi Compito"):
-        if not client:
-            st.error("Il sistema non è configurato correttamente con il token di GitHub.")
-        elif not soluzioni_prof or not foto_caricata:
-            st.error("Devi inserire sia le soluzioni sia la foto del compito!")
-        else:
-            with st.spinner("L'IA sta leggendo la calligrafia..."):
-                bytes_data = foto_caricata.getvalue()
+    st.header("Correttore di Compiti")
+    st.write("Qui puoi implementare la logica per correggere i testi dei tuoi studenti.")

@@ -1,11 +1,12 @@
 import streamlit as st
 import os
 import json
+import google.generativeai as genai
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Foglio Word A4)
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE
 st.markdown("""
     <style>
     .foglio-word {
@@ -44,19 +45,14 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google GenAI SDK)
+# CONFIGURAZIONE CLIENT (Google Generative AI SDK Stabile)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-try:
-    from google import genai
-    from google.genai import types
-    client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-except Exception as e:
-    st.error(f"Errore caricamento SDK: {e}")
-    st.stop()
+# Configurazione stabile ed esente da crash del server
+genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
 # ==========================================================
 # GESTIONE ACCOUNT (LOGIN)
@@ -93,7 +89,6 @@ if not st.session_state["autenticato"]:
 st.sidebar.title("🛠️ Menu EduCorrect")
 st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
 
-# Sostituzione dei Tab con un menu di selezione nativo e sicuro in Sidebar
 modalita = st.sidebar.radio(
     "Scegli l'operazione da eseguire:",
     ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"]
@@ -141,10 +136,8 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    risposta = client.models.generate_content(
-                        model='gemini-2.5-flash', contents=prompt_utente,
-                        config={'system_instruction': prompt_sistema, 'temperature': 0.6}
-                    )
+                    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
+                    risposta = model.generate_content(prompt_utente)
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
@@ -162,7 +155,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
 
 
-# --- SEZIONE 2: SCANSIONA E CORREGGI (SBLOCCATA DA MENU SIDEBAR) ---
+# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     st.write("Inserisci l'elaborato dell'alunno per correggerlo ed emettere il voto in decimi.")
@@ -171,7 +164,7 @@ elif modalita == "🔍 Scansiona e Correggi":
     
     with col_input:
         file_compito = st.file_uploader("📂 Carica file (Immagine del compito o PDF):", type=["png", "jpg", "jpeg", "pdf"])
-        testo_manuale = st.text_area("✍️ Oppure incolla qui il testo scritto a mano:", height=150, placeholder="Risposte dello studente...")
+        testo_manuale = st.text_area("✍️ Incolla qui il testo scritto a mano:", height=150, placeholder="Risposte dello studente...")
         
     with col_criteri:
         griglia_riferimento = st.text_area("🔑 Criteri di valutazione o soluzioni di riferimento:", 
@@ -195,8 +188,13 @@ elif modalita == "🔍 Scansiona e Correggi":
                 )
                 
                 contenuto_richiesta = []
+                
+                # Se c'è un file multimediale carichiamo l'immagine direttamente
+                if file_compito:
+                    file_bytes = file_compito.read()
+                    immagine_struttura = {"mime_type": file_compito.type, "data": file_bytes}
+                    contenuto_richiesta.append(immagine_struttura)
+                
                 testo_da_inviare = f"Compito dello studente:\n{testo_manuale}\n\nCriteri/Soluzioni:\n{griglia_riferimento}"
                 contenuto_richiesta.append(testo_da_inviare)
                 
-                if file_compito:
-                    file_bytes = file_compito.read()

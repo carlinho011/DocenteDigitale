@@ -5,51 +5,52 @@ import json
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# Stili CSS per simulare un foglio Word A4 bianco con ombreggiatura e gestire la stampa
+# STILE GRAFICO: Crea un vero foglio A4 bianco con ombreggiatura e gestisce la stampa pulita
 st.markdown("""
     <style>
-    /* Stile Simulazione Foglio Word A4 */
+    /* Stile Simulazione Foglio Word A4 su Schermo */
     .foglio-word {
-        background-color: #ffffff;
-        color: #000000;
-        padding: 40px 50px;
-        margin: 20px auto;
-        max-width: 850px;
-        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
-        border: 1px solid #e0e0e0;
-        font-family: 'Times New Roman', Times, serif, Arial;
-        line-height: 1.6;
-        font-size: 16px;
+        background-color: #ffffff !important;
+        color: #000000 !important;
+        padding: 50px 60px !important;
+        margin: 20px auto !important;
+        max-width: 800px !important;
+        box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.15) !important;
+        border: 1px solid #d3d3d3 !important;
+        font-family: 'Times New Roman', Times, serif !important;
+        line-height: 1.6 !important;
+        font-size: 16px !important;
     }
     
-    /* Intestazione del Compito */
+    /* Intestazione del Compito tipo Scuola Superiore */
     .tabella-intestazione {
-        width: 100%;
-        border-collapse: collapse;
-        border-bottom: 2px solid #000000;
-        margin-bottom: 25px;
-        font-family: Arial, sans-serif;
-        font-size: 14px;
+        width: 100% !important;
+        border-collapse: collapse !important;
+        border-bottom: 2px solid #000000 !important;
+        margin-bottom: 25px !important;
+        font-family: Arial, sans-serif !important;
+        font-size: 14px !important;
+        color: #000000 !important;
     }
     .tabella-intestazione td {
-        border: none;
-        padding: 6px 0;
+        border: none !important;
+        padding: 6px 0 !important;
     }
     
-    /* Classe per forzare l'interruzione di pagina nella stampa fisica o PDF */
+    /* Interruzione di pagina pulita per la stampa */
     .salto-pagina {
-        page-break-before: always;
-        break-before: page;
-        margin-top: 40px;
-        border-top: 1px dashed #666666;
-        padding-top: 20px;
+        page-break-before: always !important;
+        break-before: page !important;
+        margin-top: 50px !important;
+        border-top: 2px dashed #000000 !important;
+        padding-top: 20px !important;
     }
 
-    /* Ottimizzazione per la stampa fisica reale (Nasconde l'interfaccia web) */
+    /* REGOLAZIONE PER LA STAMPA REALE: Nasconde tutto tranne il foglio */
     @media print {
-        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button, [data-testid="stTabs"] nav {
+        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button, [data-testid="stTabs"] nav, .no-print {
             display: none !important;
-            visibility: hidden;
+            visibility: hidden !important;
         }
         .main .block-container {
             padding: 0px !important;
@@ -154,7 +155,6 @@ with tab1:
             st.error("Scrivi un argomento prima di generare!")
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito per le superiori..."):
-                # Istruzioni mirate per le scuole superiori (secondaria di secondo grado)
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
@@ -197,29 +197,35 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
-    # GESTIONE UNIFICAZIONE E DOWNLOAD UNICO
+    # RENDERING DEL FOGLIO REALE PRONTO DA STAMPARE
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
-        # Sostituisce il tag con la formattazione grafica per la separazione di pagina
-        blocco_salto_pagina = "\n\n=== [SALTO PAGINA DI STAMPA] ===\n\n🔑 CHIAVE DI CORREZIONE E CRITERI DI VALUTAZIONE (FOGLIO RISERVATO AL DOCENTE)\n\n"
-        testo_per_download = "📝 VERIFICA DI CLASSE\n\n" + testo_grezzo.replace("[SOLUZIONI]", blocco_salto_pagina)
-
-        # UNICO PULSANTE DI DOWNLOAD (Stile Word)
-        st.write("### 💾 Salva il Compito sul PC")
-        st.download_button(
-            label="📥 Scarica Intero Documento Word (.txt)",
-            data=testo_per_download,
-            file_name=f"compito_superiori_{argomento.lower().replace(' ', '_')}.txt",
-            mime="text/plain",
-            help="Scarica un unico file di testo contenente la verifica impaginata e, a seguire, il foglio delle correzioni per il docente."
-        )
-
-        # COSTRUZIONE ANTEPRIMA GRAFICA "STILE FOGLIO WORD A4"
-        st.subheader("Anteprima di Stampa")
+        st.write("### 🖨️ Stampa la Verifica Pronta")
         
-        # Divisione del testo per applicare le classi CSS di interruzione di pagina
+        # Pulsante JavaScript nativo per avviare la stampa del browser
+        st.markdown("""
+            <button onclick="window.print()" style="
+                background-color: #4CAF50;
+                color: white;
+                padding: 12px 24px;
+                border: none;
+                border-radius: 4px;
+                cursor: pointer;
+                font-size: 16px;
+                font-weight: bold;
+                margin-bottom: 20px;
+            " class="no-print">
+                🖨️ Clicca qui per Stampare o Salvare in PDF
+            </button>
+        """, unsafe_allow_html=True)
+
+        # Divisione del testo per impaginare le soluzioni nella pagina successiva
         if "[SOLUZIONI]" in testo_grezzo:
             parti_html = testo_grezzo.split("[SOLUZIONI]")
             testo_compito_html = parti_html[0].replace('\n', '<br>')
             testo_soluzioni_html = parti_html[1].replace('\n', '<br>')
+            
+            corpo_documento_html = f"""
+                {testo_compito_html}
+                <div class='salto-pagina'>

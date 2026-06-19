@@ -5,25 +5,62 @@ import json
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# Stili CSS per la stampa pulita (Nasconde la barra laterale e i pulsanti quando stampi)
+# Stili CSS per simulare un foglio Word A4 bianco con ombreggiatura e gestire la stampa
 st.markdown("""
     <style>
+    /* Stile Simulazione Foglio Word A4 */
+    .foglio-word {
+        background-color: #ffffff;
+        color: #000000;
+        padding: 40px 50px;
+        margin: 20px auto;
+        max-width: 850px;
+        box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.15);
+        border: 1px solid #e0e0e0;
+        font-family: 'Times New Roman', Times, serif, Arial;
+        line-height: 1.6;
+        font-size: 16px;
+    }
+    
+    /* Intestazione del Compito */
+    .tabella-intestazione {
+        width: 100%;
+        border-collapse: collapse;
+        border-bottom: 2px solid #000000;
+        margin-bottom: 25px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+    }
+    .tabella-intestazione td {
+        border: none;
+        padding: 6px 0;
+    }
+    
+    /* Classe per forzare l'interruzione di pagina nella stampa fisica o PDF */
+    .salto-pagina {
+        page-break-before: always;
+        break-before: page;
+        margin-top: 40px;
+        border-top: 1px dashed #666666;
+        padding-top: 20px;
+    }
+
+    /* Ottimizzazione per la stampa fisica reale (Nasconde l'interfaccia web) */
     @media print {
-        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button {
+        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button, [data-testid="stTabs"] nav {
             display: none !important;
             visibility: hidden;
         }
         .main .block-container {
-            padding-top: 0px;
-            padding-bottom: 0px;
+            padding: 0px !important;
+            margin: 0px !important;
         }
-        /* Classe per forzare l'interruzione di pagina nella stampa */
-        .salto-pagina {
-            page-break-before: always;
-            break-before: page;
-            margin-top: 50px;
-            border-top: 2px dashed #333;
-            padding-top: 20px;
+        .foglio-word {
+            box-shadow: none !important;
+            border: none !important;
+            padding: 0px !important;
+            margin: 0px !important;
+            max-width: 100% !important;
         }
     }
     </style>
@@ -36,7 +73,6 @@ if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Sistema di compatibilità automatica per evitare blocchi legati a requirements.txt
 try:
     from google import genai
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
@@ -97,15 +133,14 @@ if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["utente_connesso"] = ""
     if "testo_verifica" in st.session_state:
         del st.session_state["testo_verifica"]
-    if "testo_correzione" in st.session_state:
-        del st.session_state["testo_correzione"]
     st.rerun()
 
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 # --- SCHEDA 1: GENERATORE DI VERIFICHE ---
 with tab1:
-    st.header("Generatore di Compiti in Classe")
+    st.header("Generatore di Compiti in Classe (Livello Scuole Superiori)")
+    
     col1, col2 = st.columns(2)
     with col1:
         argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani, La prima guerra mondiale...")
@@ -118,22 +153,34 @@ with tab1:
         if not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
-            with st.spinner("L'intelligenza artificiale sta scrivendo il compito in italiano..."):
-                prompt_sistema = "Sei un assistente didattico per professori italiani. Genera la verifica e le risposte SOLO IN ITALIANO. Inserisci OBBLIGATORIAMNETE il tag [SOLUZIONI] subito prima di scrivere le risposte corrette o i criteri di valutazione."
+            with st.spinner("L'intelligenza artificiale sta scrivendo il compito per le superiori..."):
+                # Istruzioni mirate per le scuole superiori (secondaria di secondo grado)
+                prompt_sistema = (
+                    "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
+                    "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
+                    "Il livello di complessità, il lessico e i criteri di valutazione devono essere calibrati per studenti delle scuole superiori. "
+                    "Formatta l'intero output in testo chiaro (Markdown di base). "
+                    "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
+                )
                 
                 if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
-                    dettaglio_stile = "strutturata con un mix bilanciato di domande a scelta multipla, quesiti Vero o Falso e domande a risposta aperta."
+                    dettaglio_stile = "strutturata con un mix avanzato di quesiti a scelta multipla (con 4 opzioni), quesiti Vero o Falso giustificati e domande a risposta aperta che richiedono capacità di sintesi ed elaborazione."
                 else:
-                    dettaglio_stile = f"composta esclusivamente da domande di tipo: {stile_domande}."
+                    dettaglio_stile = f"composta rigorosamente da quesiti di tipo: {stile_domande} adatti a studenti di scuola superiore."
 
-                prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
+                prompt_utente = (
+                    f"Crea una verifica scolastica completa sull'argomento: '{argomento}'. "
+                    f"La struttura deve essere: {dettaglio_stile}. "
+                    f"Il numero totale di quesiti richiesto è: {numero_domande}. "
+                    f"Ricorda di inserire in fondo le risposte esatte o una griglia di valutazione strutturata per il docente, anticipata dal tag richiesto."
+                )
                 
                 try:
                     if usa_sdk_nuovo:
                         risposta = client.models.generate_content(
                             model='gemini-2.5-flash',
                             contents=prompt_utente,
-                            config={'system_instruction': prompt_sistema, 'temperature': 0.7}
+                            config={'system_instruction': prompt_sistema, 'temperature': 0.6}
                         )
                         testo_generato = risposta.text
                     else:
@@ -145,72 +192,34 @@ with tab1:
                         testo_generato = risposta.text
                     
                     st.session_state["testo_verifica"] = testo_generato
-                    st.success("Operazione completata con Gemini!")
+                    st.success("Verifica per le superiori generata con successo!")
                 
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
-    # GESTIONE SEPARAZIONE E DOWNLOAD FILE
+    # GESTIONE UNIFICAZIONE E DOWNLOAD UNICO
     if "testo_verifica" in st.session_state:
-        intero_testo = st.session_state['testo_verifica']
+        testo_grezzo = st.session_state['testo_verifica']
         
-        # Separa il testo della verifica dalle soluzioni usando il tag [SOLUZIONI]
-        if "[SOLUZIONI]" in intero_testo:
-            parti = intero_testo.split("[SOLUZIONI]")
-            solo_verifica = parti[0].strip()
-            solo_soluzioni = parti[1].strip()
-        else:
-            solo_verifica = intero_testo
-            solo_soluzioni = "Le soluzioni non sono state generate separatamente dall'IA."
+        # Sostituisce il tag con la formattazione grafica per la separazione di pagina
+        blocco_salto_pagina = "\n\n=== [SALTO PAGINA DI STAMPA] ===\n\n🔑 CHIAVE DI CORREZIONE E CRITERI DI VALUTAZIONE (FOGLIO RISERVATO AL DOCENTE)\n\n"
+        testo_per_download = "📝 VERIFICA DI CLASSE\n\n" + testo_grezzo.replace("[SOLUZIONI]", blocco_salto_pagina)
 
-        # SEZIONE PULSANTI DI DOWNLOAD (Visualizzati affiancati)
-        st.write("### 💾 Scarica i Documenti Generati")
-        down_col1, down_col2 = st.columns(2)
-        
-        with down_col1:
-            st.download_button(
-                label="📥 Scarica Solo Verifica (Per Studenti)",
-                data=solo_verifica,
-                file_name=f"verifica_{argomento.lower().replace(' ', '_')}.txt",
-                mime="text/plain",
-                help="Scarica il testo del compito senza le risposte"
-            )
-            
-        with down_col2:
-            st.download_button(
-                label="📥 Scarica Solo Soluzioni (Per Docente)",
-                data=solo_soluzioni,
-                file_name=f"soluzioni_{argomento.lower().replace(' ', '_')}.txt",
-                mime="text/plain",
-                help="Scarica solo le risposte corrette e i criteri di valutazione"
-            )
+        # UNICO PULSANTE DI DOWNLOAD (Stile Word)
+        st.write("### 💾 Salva il Compito sul PC")
+        st.download_button(
+            label="📥 Scarica Intero Documento Word (.txt)",
+            data=testo_per_download,
+            file_name=f"compito_superiori_{argomento.lower().replace(' ', '_')}.txt",
+            mime="text/plain",
+            help="Scarica un unico file di testo contenente la verifica impaginata e, a seguire, il foglio delle correzioni per il docente."
+        )
 
-        # ANTEPRIMA WEB CON INTESTAZIONE SCOLASTICA
-        st.subheader("Anteprima Grafica del Compito")
-        testo_html = solo_verifica.replace('\n', '<br>')
-        soluzioni_html = solo_soluzioni.replace('\n', '<br>')
+        # COSTRUZIONE ANTEPRIMA GRAFICA "STILE FOGLIO WORD A4"
+        st.subheader("Anteprima di Stampa")
         
-        blocco_salto_pagina = f"<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3><br>{soluzioni_html}</div>"
-        
-        intestazione_studente = """
-        <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
-            <table style='width: 100%; border: none;'>
-                <tr>
-                    <td style='width: 50%; font-weight: bold;'>Istituto Scolastico: ____________________</td>
-                    <td style='width: 50%; font-weight: bold; text-align: right;'>Data: ____/____/________</td>
-                </tr>
-                <tr>
-                    <td style='padding-top: 10px;'>Alunno/a: ______________________________</td>
-                    <td style='padding-top: 10px; text-align: right;'>Classe: ________________</td>
-                </tr>
-            </table>
-        </div>
-        """
-        
-        # Mostra a schermo l'intera struttura impaginata
-        st.markdown(intestazione_studente + testo_html + blocco_salto_pagina, unsafe_allow_html=True)
-
-# --- SCHEDA 2: SCANSIONA E CORREGGI ---
-with tab2:
-    st.header("Correttore di Compiti")
-    st.write("Qui puoi implementare la logica per correggere i testi dei tuoi studenti.")
+        # Divisione del testo per applicare le classi CSS di interruzione di pagina
+        if "[SOLUZIONI]" in testo_grezzo:
+            parti_html = testo_grezzo.split("[SOLUZIONI]")
+            testo_compito_html = parti_html[0].replace('\n', '<br>')
+            testo_soluzioni_html = parti_html[1].replace('\n', '<br>')

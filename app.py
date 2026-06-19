@@ -77,7 +77,7 @@ def genera_file_pdf(argomento, difficolta, testo_compito, testo_soluzioni=None):
     testo_compito_codificato = testo_compito.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 6, testo_compito_codificato)
     
-    # Sezione soluzioni (se presente viene forzata su una nuova pagina)
+    # Sezione soluzioni
     if testo_soluzioni:
         pdf.add_page()
         pdf.set_font("Arial", "B", 12)
@@ -98,6 +98,7 @@ if "GEMINI_KEY" not in st.secrets:
 
 try:
     from google import genai
+    from google.genai import types
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
     usa_sdk_nuovo = True
 except ImportError:
@@ -145,6 +146,8 @@ if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["utente_connesso"] = ""
     if "testo_verifica" in st.session_state:
         del st.session_state["testo_verifica"]
+    if "analisi_correzione" in st.session_state:
+        del st.session_state["analisi_correzione"]
     st.rerun()
 
 tab1, tab2 = st.tabs(["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
@@ -159,7 +162,6 @@ with tab1:
     with col2:
         stile_domande = st.selectbox("Tipo di domande:", ["Domande miste (Vero/Falso, Crocette, Aperte)", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     with col3:
-        # NUOVO MENU A TENDINA PER LA DIFFICOLTÀ
         difficolta = st.selectbox("Livello di difficoltà:", ["facile", "media", "difficile"])
     
     numero_domande = st.slider("Numero di domande totali:", min_value=1, max_value=20, value=5)
@@ -176,7 +178,6 @@ with tab1:
                     "Formatta l'intero output in testo chiaro (Markdown di base). "
                     "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
                 )
-                
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
                 
                 try:
@@ -196,10 +197,8 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore: {e}")
 
-    # RENDERING ESPORTAZIONE E ANTEPRIMA GRAFICA FOGLIO WORD
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
-        
         st.write("### 📄 Esporta e Visualizza")
 
         if "[SOLUZIONI]" in testo_grezzo:
@@ -213,15 +212,13 @@ with tab1:
         try:
             pdf_raw = genera_file_pdf(argomento, difficolta, compito_testo_puro, soluzioni_testo_puro)
             pdf_bytes = bytes(pdf_raw)
-            
             st.download_button(
                 label="📥 Scarica Verifica in formato PDF (Pronta da stampare)",
-                data=pdf_bytes,
-                file_name=f"verifica_{difficolta}_{argomento.lower().replace(' ', '_')}.pdf",
-                mime="application/pdf",
-                help="Salva la verifica direttamente in PDF sul tuo dispositivo"
+                data=pdf_bytes, file_name=f"verifica_{difficolta}_{argomento.lower().replace(' ', '_')}.pdf",
+                mime="application/pdf"
             )
         except Exception as pdf_err:
             st.error(f"⚠️ Impossibile generare il PDF: {pdf_err}")
 
-        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA WEB (Foglio A4 bianco simulato)
+        testo_html = testo_grezzo.replace('\n', '<br>')
+        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"

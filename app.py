@@ -5,10 +5,10 @@ import json
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Inietta il CSS a livello globale)
+# STILE GRAFICO: Forza l'applicazione a mostrare un vero foglio A4 bianco simulato
 st.markdown("""
     <style>
-    /* Stile Simulazione Foglio Word A4 su Schermo */
+    /* Contenitore stile foglio Word A4 */
     .foglio-word {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -22,7 +22,7 @@ st.markdown("""
         font-size: 16px !important;
     }
     
-    /* Intestazione del Compito tipo Scuola Superiore */
+    /* Intestazione formale per Scuola Superiore */
     .tabella-intestazione {
         width: 100% !important;
         border-collapse: collapse !important;
@@ -37,38 +37,13 @@ st.markdown("""
         padding: 6px 0 !important;
     }
     
-    /* Interruzione di pagina pulita per la stampa e esportazione PDF */
+    /* Salto pagina visivo ed effettivo per la stampa */
     .salto-pagina {
         page-break-before: always !important;
         break-before: page !important;
         margin-top: 50px !important;
         border-top: 2px dashed #000000 !important;
         padding-top: 20px !important;
-    }
-
-    /* REGOLAZIONE PER LA STAMPA REALE: Nasconde i controlli web di Streamlit */
-    @media print {
-        header, 
-        [data-testid="stSidebar"], 
-        [data-testid="stHeader"], 
-        [data-testid="stTabs"] nav, 
-        .stAlert,
-        div.stButton,
-        .no-print {
-            display: none !important;
-            visibility: hidden !important;
-        }
-        .main .block-container {
-            padding: 0px !important;
-            margin: 0px !important;
-        }
-        .foglio-word {
-            box-shadow: none !important;
-            border: none !important;
-            padding: 0px !important;
-            margin: 0px !important;
-            max-width: 100% !important;
-        }
     }
     </style>
 """, unsafe_allow_html=True)
@@ -104,7 +79,7 @@ if "UTENTI_ABILITATI" in st.secrets:
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
 
-# Controllo dello stato di autenticazione dell'utente
+# Controllo autenticazione
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
@@ -113,24 +88,19 @@ if "utente_connesso" not in st.session_state:
 # SCHERMATA DI LOGIN
 if not st.session_state["autenticato"]:
     st.title("🔒 Area Riservata Docenti - EduCorrect")
-    st.write("Inserisci le tue credenziali personali per accedere al pannello software.")
-    
-    email_inserita = st.text_input("Inserisci la tua Email:", placeholder="nome.cognome@scuola.it")
+    email_inserita = st.text_input("Inserisci la tua Email:")
     password_inserita = st.text_input("Inserisci la tua Password:", type="password")
-    
     if st.button("Accedi al Sistema"):
         if email_inserita in UTENTI_ATTIVI and password_inserita == UTENTI_ATTIVI[email_inserita]:
             st.session_state["autenticato"] = True
             st.session_state["utente_connesso"] = email_inserita
-            st.success("Accesso eseguito con successo!")
             st.rerun()
         else:
-            st.error("❌ Credenziali errate. Riprova o contatta l'amministratore del sito.")
-            
+            st.error("❌ Credenziali errate.")
     st.stop()
 
 # ==========================================================
-# INTERFACCIA PRINCIPALE (UTENTE LOGGATO)
+# INTERFACCIA PRINCIPALE
 # ==========================================================
 st.title("📝 EduCorrect: Crea e Correggi Verifiche con l'IA")
 st.sidebar.write(f"👤 Connesso come: **{st.session_state['utente_connesso']}**")
@@ -164,50 +134,56 @@ with tab1:
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello di complessità, il lessico e i criteri di valutazione devono essere calibrati per studenti delle scuole superiori. "
-                    "Formatta l'intero output in testo chiaro (Markdown di base). "
-                    "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
+                    "Il livello di complessità deve essere calibrato per studenti delle scuole superiori. "
+                    "Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
                 )
                 
-                if stile_domande == "Domande miste (Vero/Falso, Crocette, Aperte)":
-                    dettaglio_stile = "strutturata con un mix avanzato di quesiti a scelta multipla (con 4 opzioni), quesiti Vero o Falso giustificati e domande a risposta aperta che richiedono capacità di sintesi ed elaborazione."
-                else:
-                    dettaglio_stile = f"composta rigorosamente da quesiti di tipo: {stile_domande} adatti a studenti di scuola superiore."
-
-                prompt_utente = (
-                    f"Crea una verifica scolastica completa sull'argomento: '{argomento}'. "
-                    f"La struttura deve essere: {dettaglio_stile}. "
-                    f"Il numero totale di quesiti richiesto è: {numero_domande}. "
-                    f"Ricorda di inserire in fondo le risposte esatte o una griglia di valutazione strutturata per il docente, anticipata dal tag richiesto."
-                )
+                prompt_utente = f"Crea una verifica superiore su '{argomento}'. Tipo: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
                 
                 try:
                     if usa_sdk_nuovo:
                         risposta = client.models.generate_content(
-                            model='gemini-2.5-flash',
-                            contents=prompt_utente,
+                            model='gemini-2.5-flash', contents=prompt_utente,
                             config={'system_instruction': prompt_sistema, 'temperature': 0.6}
                         )
                         testo_generato = risposta.text
                     else:
-                        model = dg_genai.GenerativeModel(
-                            model_name='gemini-2.5-flash',
-                            system_instruction=prompt_sistema
-                        )
+                        model = dg_genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=prompt_sistema)
                         risposta = model.generate_content(prompt_utente)
                         testo_generato = risposta.text
                     
                     st.session_state["testo_verifica"] = testo_generato
-                    st.success("Verifica per le superiori generata con successo!")
-                
+                    st.success("Verifica generata!")
                 except Exception as e:
-                    st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
+                    st.error(f"⚠️ Errore: {e}")
 
-    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO (Struttura lineare a riga singola senza f-string)
+    # RENDERING ANTEPRIMA E TASTO DI SCARICAMENTO DIRETTO
     if "testo_verifica" in st.session_state:
-        st.write("### 📄 Esporta Documento")
+        testo_grezzo = st.session_state['testo_verifica']
         
-        slug_argomento = argomento.lower().replace(' ', '_')
-        nome_file_pdf = "verifica_superiori_" + slug_argomento + ".pdf"
+        st.write("### 📄 Esporta e Visualizza")
 
-        # Script scritto in forma lineare monoriga per aggirare i bug delle virgolette triple e delle parentesi in Streamlit Cloud
+        # PULSANTE DI DOWNLOAD DIRETTO (Nativo, stabile, non usa la tastiera)
+        # Scarica l'intero documento formattato leggibile da qualsiasi dispositivo
+        st.download_button(
+            label="📥 Clicca qui per Scaricare il File della Verifica",
+            data=testo_grezzo.replace("[SOLUZIONI]", "\n\n--- FOGLIO SOLUZIONI DOCENTE ---\n\n"),
+            file_name=f"verifica_{argomento.lower().replace(' ', '_')}.txt",
+            mime="text/plain",
+            help="Clicca per salvare immediatamente il documento sul tuo computer"
+        )
+
+        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA (Foglio Word A4 bianco)
+        testo_html = testo_grezzo.replace('\n', '<br>')
+        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
+        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
+
+        intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
+
+        # Mostra il foglio Word formattato a schermo
+        st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
+
+# --- SCHEDA 2: SCANSIONA E CORREGGI ---
+with tab2:
+    st.header("Correttore di Compiti")
+    st.write("Sviluppo della sezione di valutazione automatica.")

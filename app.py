@@ -166,7 +166,7 @@ with tab1:
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello di complessità, il lessico e i criteri di valutazione devono essere calibrati per studenti delle scuole superiori. "
+                    "Il livello diDocente di scuola superiore richiede un linguaggio rigoroso. "
                     "Formatta l'intero output in testo chiaro (Markdown di base). "
                     "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
                 )
@@ -212,7 +212,7 @@ with tab1:
         # Messaggio informativo stabile per l'utente
         st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera. Il sistema nasconderà automaticamente i menù del sito lasciando solo il foglio bianco pronto per la stampa o il salvataggio in PDF.")
 
-        # Gestione e formattazione con allineamento corretto (Risoluzione IndentationError)
+        # Gestione stringhe e formattazione con allineamento corretto dei blocchi if/else
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_pulito = parti_testo[0].strip().replace('\n', '<br>')

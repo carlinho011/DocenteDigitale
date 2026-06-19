@@ -220,12 +220,11 @@ with tab1:
             </button>
         """, unsafe_allow_html=True)
 
-        # Divisione del testo per impaginare le soluzioni nella pagina successiva
+        # Elaborazione corretta della stringa HTML per evitare i SyntaxError delle f-string
         if "[SOLUZIONI]" in testo_grezzo:
-            parti_html = testo_grezzo.split("[SOLUZIONI]")
-            testo_compito_html = parti_html[0].replace('\n', '<br>')
-            testo_soluzioni_html = parti_html[1].replace('\n', '<br>')
+            parti_testo = testo_grezzo.split("[SOLUZIONI]")
+            testo_compito_html = parti_testo[0].replace('\n', '<br>')
+            testo_soluzioni_html = parti_testo[1].replace('\n', '<br>')
             
-            corpo_documento_html = f"""
-                {testo_compito_html}
-                <div class='salto-pagina'>
+            corpo_documento_html = (
+                f"{testo_compito_html}"

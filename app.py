@@ -32,14 +32,17 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google Gemini tramite SDK OpenAI)
+# CONFIGURAZIONE CLIENT (Sicura tramite Streamlit Secrets)
 # ==========================================================
-# Utilizza direttamente la chiave Gemini fornita configurando l'endpoint di Google AI Studio
-GEMINI_KEY = "AQ.Ab8RN6JP--b_C2eXiGnyu0Qm4yk8AS87UxfjnzOxucdbt1oV7A"
+# Controlla se la chiave Gemini è configurata nei Secrets
+if "GEMINI_KEY" not in st.secrets:
+    st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
+    st.stop()
 
+# URL CORRETTO: Rimosso il segmento finale errato che generava il 404
 client = OpenAI(
     base_url="https://googleapis.com",
-    api_key=GEMINI_KEY
+    api_key=st.secrets["GEMINI_KEY"]
 )
 
 # ==========================================================
@@ -125,7 +128,6 @@ with tab1:
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
                 try:
-                    # Chiamata aggiornata al modello gratuito gemini-2.5-flash
                     risposta = client.chat.completions.create(
                         model="gemini-2.5-flash", 
                         messages=[
@@ -155,7 +157,6 @@ with tab1:
         blocco_salto_pagina = "<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3></div>"
         testo_elaborato = testo_html.replace("[SOLUZIONI]", blocco_salto_pagina).replace("### Soluzioni", "").replace("## Soluzioni", "")
         
-        # Completamento dell'intestazione HTML che era interrotta
         intestazione_studente = """
         <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
             <table style='width: 100%; border: none;'>

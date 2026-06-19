@@ -45,13 +45,13 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google Generative AI SDK Corretto)
+# CONFIGURAZIONE CLIENT (Google Generative AI SDK)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# RISOLUZIONE BUG: Configurazione standard pulita senza parametri non accettati
+# Configurazione standard e pulita
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
 # ==========================================================
@@ -126,7 +126,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         if not argomento:
             st.error("Scrivi un argomento prima di generare!")
         else:
-            with st.spinner("Generazione compito in corso..."):
+            with st.spinner("Generazione compito in corso con Gemini..."):
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
@@ -136,8 +136,8 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    # Uso corretto e standard del modello stabile
-                    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
+                    # AGGIORNATO: Utilizzo del modello di produzione gemini-2.5-flash
+                    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=prompt_sistema)
                     risposta = model.generate_content(prompt_utente)
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
@@ -196,3 +196,5 @@ elif modalita == "🔍 Scansiona e Correggi":
                     contenuto_richiesta.append(immagine_struttura)
                 
                 testo_da_inviare = f"Compito dello studente:\n{testo_manuale}\n\nCriteri/Soluzioni:\n{griglia_riferimento}"
+                contenuto_richiesta.append(testo_da_inviare)
+                

@@ -48,7 +48,6 @@ st.markdown("""
 
     /* REGOLAZIONE PER LA STAMPA REALE: Nasconde i controlli web di Streamlit */
     @media print {
-        /* Nasconde menù, barre laterali, schede e testate di Streamlit */
         header, 
         [data-testid="stSidebar"], 
         [data-testid="stHeader"], 
@@ -59,7 +58,6 @@ st.markdown("""
             display: none !important;
             visibility: hidden !important;
         }
-        /* Resetta i margini di Streamlit per usare tutto il foglio */
         .main .block-container {
             padding: 0px !important;
             margin: 0px !important;
@@ -166,7 +164,7 @@ with tab1:
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello diDocente di scuola superiore richiede un linguaggio rigoroso. "
+                    "Il livello di complessità, il lessico e i criteri di valutazione devono essere calibrati per studenti delle scuole superiori. "
                     "Formatta l'intero output in testo chiaro (Markdown di base). "
                     "Inserisci obbligatoriamente il tag specifico [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione o le risposte corrette."
                 )
@@ -209,13 +207,18 @@ with tab1:
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
-        # Messaggio informativo stabile per l'utente
-        st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera. Il sistema nasconderà automaticamente i menù del sito lasciando solo il foglio bianco pronto per la stampa o il salvataggio in PDF.")
+        st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera per aprire il pannello di stampa o salvare in PDF.")
 
-        # Gestione stringhe e formattazione con allineamento corretto dei blocchi if/else
+        # Estrazione sicura degli elementi della lista tramite indici (Risoluzione IndentationError)
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
             soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
             corpo_documento_html = f"{compito_pulito}<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>{soluzioni_pulite}</div>"
         else:
+            corpo_documento_html = testo_grezzo.replace('\n', '<br>')
+
+        # Intestazione formale scolastica (Stile compito ministeriale)
+        intestazione_word_html = f"""
+        <table class='tabella-intestazione'>
+            <tr>

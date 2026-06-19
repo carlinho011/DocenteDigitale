@@ -134,7 +134,7 @@ with tab1:
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello di complessità deve essere calibrato per studenti delle scuole superiori. "
+                    "Il livello di complessità deve essere calibrati per studenti delle scuole superiori. "
                     "Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
                 )
                 
@@ -157,23 +157,25 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore: {e}")
 
-    # RENDERING ANTEPRIMA E TASTO DI SCARICAMENTO DIRETTO
+    # RENDERING ANTEPRIMA E TASTO DI SCARICAMENTO DIRETTO IN FORMATO WORD (.DOC)
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
         st.write("### 📄 Esporta e Visualizza")
 
-        # PULSANTE DI DOWNLOAD DIRETTO (Nativo, stabile, non usa la tastiera)
-        # Scarica l'intero documento formattato leggibile da qualsiasi dispositivo
+        # Conversione e preparazione del testo compatibile per Microsoft Word (.doc)
+        testo_pulito_per_word = testo_grezzo.replace("[SOLUZIONI]", "\n\n--- FOGLIO CHIAVE DI CORREZIONE DOCENTE ---\n\n")
+
+        # PULSANTE DI DOWNLOAD DIRETTO CONFIGURATO IN FORMATO MICROSOFT WORD
         st.download_button(
-            label="📥 Clicca qui per Scaricare il File della Verifica",
-            data=testo_grezzo.replace("[SOLUZIONI]", "\n\n--- FOGLIO SOLUZIONI DOCENTE ---\n\n"),
-            file_name=f"verifica_{argomento.lower().replace(' ', '_')}.txt",
-            mime="text/plain",
-            help="Clicca per salvare immediatamente il documento sul tuo computer"
+            label="📥 Clicca qui per Scaricare la Verifica in formato Word (.doc)",
+            data=testo_pulito_per_word,
+            file_name=f"verifica_{argomento.lower().replace(' ', '_')}.doc",
+            mime="application/msword",
+            help="Salva immediatamente il file sul PC come documento Word modificabile"
         )
 
-        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA (Foglio Word A4 bianco)
+        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA (Foglio Word A4 bianco sullo schermo)
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
         corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")

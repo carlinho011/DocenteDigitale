@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import json
-from google import genai
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -31,14 +30,21 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Ufficiale Google GenAI SDK)
+# CONFIGURAZIONE CLIENT (Doppio supporto SDK Google)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Inizializzazione stabile con l'SDK nativo di Google
-client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
+# Sistema di compatibilità automatica per evitare blocchi legati a requirements.txt
+try:
+    from google import genai
+    client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
+    usa_sdk_nuovo = True
+except ImportError:
+    import google.generativeai as dg_genai
+    dg_genai.configure(api_key=st.secrets["GEMINI_KEY"])
+    usa_sdk_nuovo = False
 
 # ==========================================================
 # GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
@@ -123,27 +129,68 @@ with tab1:
                 prompt_utente = f"Crea una verifica superiore su: {argomento}. Struttura: {dettaglio_stile}. Numero quesiti: {numero_domande}. Includi soluzioni in fondo anticipate dal tag richiesto."
                 
                 try:
-                    # Chiamata nativa SDK Google senza rischi di 404
-                    risposta = client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=prompt_utente,
-                        config={
-                            'system_instruction': prompt_sistema,
-                            'temperature': 0.7
-                        }
-                    )
+                    if usa_sdk_nuovo:
+                        risposta = client.models.generate_content(
+                            model='gemini-2.5-flash',
+                            contents=prompt_utente,
+                            config={'system_instruction': prompt_sistema, 'temperature': 0.7}
+                        )
+                        testo_generato = risposta.text
+                    else:
+                        model = dg_genai.GenerativeModel(
+                            model_name='gemini-2.5-flash',
+                            system_instruction=prompt_sistema
+                        )
+                        risposta = model.generate_content(prompt_utente)
+                        testo_generato = risposta.text
                     
-                    st.session_state["testo_verifica"] = risposta.text
+                    st.session_state["testo_verifica"] = testo_generato
                     st.success("Operazione completata con Gemini!")
                 
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
+    # GESTIONE SEPARAZIONE E DOWNLOAD FILE
     if "testo_verifica" in st.session_state:
-        st.subheader("Anteprima della Verifica")
-        testo_html = st.session_state['testo_verifica'].replace('\n', '<br>')
-        blocco_salto_pagina = "<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3></div>"
-        testo_elaborato = testo_html.replace("[SOLUZIONI]", blocco_salto_pagina).replace("### Soluzioni", "").replace("## Soluzioni", "")
+        intero_testo = st.session_state['testo_verifica']
+        
+        # Separa il testo della verifica dalle soluzioni usando il tag [SOLUZIONI]
+        if "[SOLUZIONI]" in intero_testo:
+            parti = intero_testo.split("[SOLUZIONI]")
+            solo_verifica = parti[0].strip()
+            solo_soluzioni = parti[1].strip()
+        else:
+            solo_verifica = intero_testo
+            solo_soluzioni = "Le soluzioni non sono state generate separatamente dall'IA."
+
+        # SEZIONE PULSANTI DI DOWNLOAD (Visualizzati affiancati)
+        st.write("### 💾 Scarica i Documenti Generati")
+        down_col1, down_col2 = st.columns(2)
+        
+        with down_col1:
+            st.download_button(
+                label="📥 Scarica Solo Verifica (Per Studenti)",
+                data=solo_verifica,
+                file_name=f"verifica_{argomento.lower().replace(' ', '_')}.txt",
+                mime="text/plain",
+                help="Scarica il testo del compito senza le risposte"
+            )
+            
+        with down_col2:
+            st.download_button(
+                label="📥 Scarica Solo Soluzioni (Per Docente)",
+                data=solo_soluzioni,
+                file_name=f"soluzioni_{argomento.lower().replace(' ', '_')}.txt",
+                mime="text/plain",
+                help="Scarica solo le risposte corrette e i criteri di valutazione"
+            )
+
+        # ANTEPRIMA WEB CON INTESTAZIONE SCOLASTICA
+        st.subheader("Anteprima Grafica del Compito")
+        testo_html = solo_verifica.replace('\n', '<br>')
+        soluzioni_html = solo_soluzioni.replace('\n', '<br>')
+        
+        blocco_salto_pagina = f"<div class='salto-pagina'><h3>🔑 Soluzioni e Criteri di Valutazione (Foglio Docente)</h3><br>{soluzioni_html}</div>"
         
         intestazione_studente = """
         <div style='border-bottom: 2px solid #333; padding-bottom: 15px; margin-bottom: 20px; font-family: sans-serif; color: #111111;'>
@@ -160,7 +207,8 @@ with tab1:
         </div>
         """
         
-        st.markdown(intestazione_studente + testo_elaborato, unsafe_allow_html=True)
+        # Mostra a schermo l'intera struttura impaginata
+        st.markdown(intestazione_studente + testo_html + blocco_salto_pagina, unsafe_allow_html=True)
 
 # --- SCHEDA 2: SCANSIONA E CORREGGI ---
 with tab2:

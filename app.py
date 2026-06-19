@@ -38,7 +38,7 @@ if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Configurazione del client compatibile con OpenAI
+# Configurazione del client compatibile con OpenAI (URL corretto senza slash finale)
 client = OpenAI(
     base_url="https://googleapis.com",
     api_key=st.secrets["GEMINI_KEY"]
@@ -135,17 +135,16 @@ with tab1:
                         ]
                     )
                     
-                    # ESTRAZIONE DI SICUREZZA ADATTA A TUTTE LE VERSIONI DI OPENAI
+                    # Estrazione del testo con gestione di compatibilità per liste e oggetti
                     testo_pulito = ""
-                    if hasattr(risposta, "choices") and len(risposta.choices) > 0:
-                        scelta = risposta.choices[0]
-                        # Supporto sia per oggetti moderni (.message.content) che dizionari/liste vecchie
-                        if hasattr(scelta, "message") and hasattr(scelta.message, "content"):
-                            testo_pulito = scelta.message.content
-                        elif isinstance(scelta, dict) and "message" in scelta:
-                            testo_pulito = scelta["message"].get("content", "")
-                        else:
-                            testo_pulito = getattr(scelta, "text", str(scelta))
+                    if hasattr(risposta, "choices"):
+                        scelte = risposta.choices
+                        if len(scelte) > 0:
+                            prima_scelta = scelte[0]
+                            if hasattr(prima_scelta, "message"):
+                                testo_pulito = prima_scelta.message.content
+                            elif isinstance(prima_scelta, dict) and "message" in prima_scelta:
+                                testo_pulito = prima_scelta["message"].get("content", "")
                     elif isinstance(risposta, dict) and "choices" in risposta:
                         testo_pulito = risposta["choices"][0]["message"]["content"]
                     else:

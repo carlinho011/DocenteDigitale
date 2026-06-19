@@ -37,7 +37,7 @@ st.markdown("""
         padding: 6px 0 !important;
     }
     
-    /* Interruzione di pagina pulita per la stampa */
+    /* Interruzione di pagina pulita per la stampa e esportazione PDF */
     .salto-pagina {
         page-break-before: always !important;
         break-before: page !important;
@@ -72,6 +72,9 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# Iniezione dello script JavaScript esterno per la conversione in PDF reale (html2pdf)
+st.markdown('<script src="https://cloudflare.com"></script>', unsafe_allow_html=True)
 
 # ==========================================================
 # CONFIGURAZIONE CLIENT (Doppio supporto SDK Google)
@@ -203,16 +206,24 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
-    # RENDERING DEL FOGLIO REALE PRONTO DA STAMPARE
+    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
-        st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera per aprire il pannello di stampa o salvare in PDF.")
+        st.write("### 📄 Esporta Documento")
+        
+        # Nome file dinamico basato sull'argomento scelto dal docente
+        nome_file_pdf = f"verifica_superiori_{argomento.lower().replace(' ', '_')}.pdf"
 
-        # Trasformazione del testo in HTML puro in modo lineare
-        testo_html = testo_grezzo.replace('\n', '<br>')
-        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
-        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
-
-        # Intestazione formale scolastica definita in un'unica stringa monoriga senza interruzioni di sintassi
-        oggetto_titolo = argomento.capitalize()
+        # PULSANTE INTERATTIVO SENZA TASTIERA: Genera ed esporta il PDF iniettando JavaScript nell'iframe
+        script_html2pdf = f"""
+            <div class="no-print">
+                <button onclick="scaricaIlPDF()" style="
+                    background-color: #008CBA;
+                    color: white;
+                    padding: 14px 28px;
+                    border: none;
+                    border-radius: 5px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: bold;

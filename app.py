@@ -209,16 +209,14 @@ with tab1:
         
         st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera per aprire il pannello di stampa o salvare in PDF.")
 
-        # Estrazione sicura degli elementi della lista tramite indici (Risoluzione IndentationError)
-        if "[SOLUZIONI]" in testo_grezzo:
-            parti_testo = testo_grezzo.split("[SOLUZIONI]")
-            compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
-            soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
-            corpo_documento_html = f"{compito_pulito}<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>{soluzioni_pulite}</div>"
-        else:
-            corpo_documento_html = testo_grezzo.replace('\n', '<br>')
+        # Trasformazione del testo in HTML puro in modo lineare per evitare SyntaxError delle f-string
+        testo_html = testo_grezzo.replace('\n', '<br>')
+        div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
+        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
 
-        # Intestazione formale scolastica (Stile compito ministeriale)
-        intestazione_word_html = f"""
-        <table class='tabella-intestazione'>
-            <tr>
+        # Intestazione formale scolastica (Testo HTML normale privo di nidificazioni instabili)
+        oggetto_titolo = argomento.capitalize()
+        intestazione_word_html = (
+            "<table class='tabella-intestazione'>"
+            "<tr>"
+            "<td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td>"

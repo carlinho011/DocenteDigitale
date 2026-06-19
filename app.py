@@ -5,7 +5,7 @@ import json
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO: Crea un vero foglio A4 bianco con ombreggiatura e gestisce la stampa pulita
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Inietta il CSS a livello globale)
 st.markdown("""
     <style>
     /* Stile Simulazione Foglio Word A4 su Schermo */
@@ -46,12 +46,20 @@ st.markdown("""
         padding-top: 20px !important;
     }
 
-    /* REGOLAZIONE PER LA STAMPA REALE: Nasconde tutto tranne il foglio */
+    /* REGOLAZIONE PER LA STAMPA REALE: Nasconde i controlli web di Streamlit */
     @media print {
-        header, [data-testid="stSidebar"], .stButton, [data-testid="stHeader"], button, [data-testid="stTabs"] nav, .no-print {
+        /* Nasconde menù, barre laterali, schede e testate di Streamlit */
+        header, 
+        [data-testid="stSidebar"], 
+        [data-testid="stHeader"], 
+        [data-testid="stTabs"] nav, 
+        .stAlert,
+        div.stButton,
+        .no-print {
             display: none !important;
             visibility: hidden !important;
         }
+        /* Resetta i margini di Streamlit per usare tutto il foglio */
         .main .block-container {
             padding: 0px !important;
             margin: 0px !important;
@@ -201,28 +209,14 @@ with tab1:
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
-        st.write("### 🖨️ Stampa la Verifica Pronta")
-        
-        # Pulsante JavaScript nativo per avviare la stampa del browser
-        st.markdown("""
-            <button onclick="window.print()" style="
-                background-color: #4CAF50;
-                color: white;
-                padding: 12px 24px;
-                border: none;
-                border-radius: 4px;
-                cursor: pointer;
-                font-size: 16px;
-                font-weight: bold;
-                margin-bottom: 20px;
-            " class="no-print">
-                🖨️ Clicca qui per Stampare o Salvare in PDF
-            </button>
-        """, unsafe_allow_html=True)
+        # Messaggio informativo stabile per l'utente
+        st.info("💡 **Istruzioni per salvare o stampare:** Premi **CTRL + P** (Windows) oppure **CMD + P** (Mac) sulla tastiera. Il sistema nasconderà automaticamente i menù del sito lasciando solo il foglio bianco pronto per la stampa o il salvataggio in PDF.")
 
-        # Gestione e formattazione dei blocchi di testo senza l'uso di parentesi multilinea
+        # Elaborazione stringhe pulita
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_pulito = parti_testo[0].strip().replace('\n', '<br>')
             soluzioni_pulite = parti_testo[1].strip().replace('\n', '<br>')
             
+            corpo_documento_html = f"{compito_pulito}<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>{soluzioni_pulite}</div>"
+        else:

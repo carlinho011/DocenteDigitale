@@ -203,32 +203,11 @@ with tab1:
                 except Exception as e:
                     st.error(f"⚠️ Errore durante la generazione con Gemini: {e}")
 
-    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO (Risoluzione f-string bug)
+    # RENDERING DEL FOGLIO CON PULSANTE PDF AUTOMATICO (Struttura lineare a riga singola senza f-string)
     if "testo_verifica" in st.session_state:
-        testo_grezzo = st.session_state['testo_verifica']
-        
         st.write("### 📄 Esporta Documento")
         
-        # Genera il nome del file in modo pulito per JavaScript
         slug_argomento = argomento.lower().replace(' ', '_')
         nome_file_pdf = "verifica_superiori_" + slug_argomento + ".pdf"
 
-        # Script HTML + JS puro senza l'uso di f-string (Nessun rischio di errore 404 o sintassi)
-        script_html2pdf = """
-            <div class="no-print">
-                <button onclick="scaricaIlPDF()" style="
-                    background-color: #008CBA;
-                    color: white;
-                    padding: 14px 28px;
-                    border: none;
-                    border-radius: 5px;
-                    cursor: pointer;
-                    font-size: 16px;
-                    font-weight: bold;
-                    margin-bottom: 25px;
-                    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-                ">
-                    📥 Scarica Verifica in PDF
-                </button>
-            </div>
-            
+        # Script scritto in forma lineare monoriga per aggirare i bug delle virgolette triple e delle parentesi in Streamlit Cloud

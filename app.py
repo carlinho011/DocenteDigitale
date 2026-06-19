@@ -39,9 +39,9 @@ if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# URL CORRETTO: Rimosso il segmento finale errato che generava il 404
+# Configurazione del client compatibile con OpenAI (Rimosso 'openai/' dall'endpoint per evitare il 404)
 client = OpenAI(
-    base_url="https://googleapis.com",
+    base_url="https://generativelanguage.googleapis.com/v1beta/",
     api_key=st.secrets["GEMINI_KEY"]
 )
 

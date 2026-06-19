@@ -74,7 +74,6 @@ def genera_file_pdf(argomento, testo_compito, testo_soluzioni=None):
     
     # Corpo del compito
     pdf.set_font("Times", "", 11)
-    # Conversione testo per compatibilità caratteri ISO-8859-1 di FPDF
     testo_compito_codificato = testo_compito.encode('latin-1', 'replace').decode('latin-1')
     pdf.multi_cell(0, 6, testo_compito_codificato)
     
@@ -168,7 +167,7 @@ with tab1:
         else:
             with st.spinner("L'intelligenza artificiale sta scrivendo il compito per le superiori..."):
                 prompt_sistema = (
-                    "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
+                    "Sei un assistant didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
                     "Il livello di complessità deve essere calibrato per studenti delle scuole superiori. "
                     "Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
@@ -185,7 +184,7 @@ with tab1:
                     else:
                         model = dg_genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=prompt_sistema)
                         risposta = model.generate_content(prompt_utente)
-                        testo_generato = respuesta.text
+                        testo_generato = risposta.text
                     
                     st.session_state["testo_verifica"] = testo_generato
                     st.success("Verifica generata!")
@@ -198,7 +197,6 @@ with tab1:
         
         st.write("### 📄 Esporta e Visualizza")
 
-        # Separazione pulita dei testi per la compilazione del PDF multi-pagina
         if "[SOLUZIONI]" in testo_grezzo:
             parti_testo = testo_grezzo.split("[SOLUZIONI]")
             compito_testo_puro = parti_testo[0].strip()
@@ -207,11 +205,11 @@ with tab1:
             compito_testo_puro = testo_grezzo.strip()
             soluzioni_testo_puro = None
 
-        # Compilazione del file binario PDF
         try:
-            pdf_bytes = genera_file_pdf(argomento, compito_testo_puro, soluzioni_testo_puro)
+            pdf_raw = genera_file_pdf(argomento, compito_testo_puro, soluzioni_testo_puro)
+            # RISOLUZIONE BUG: Forza la conversione del bytearray in oggetto bytes compatibile con Streamlit
+            pdf_bytes = bytes(pdf_raw)
             
-            # PULSANTE DI DOWNLOAD DIRETTO DEL PDF
             st.download_button(
                 label="📥 Scarica Verifica in formato PDF (Pronta da stampare)",
                 data=pdf_bytes,
@@ -225,3 +223,5 @@ with tab1:
         # COSTRUZIONE DELL'ANTEPRIMA GRAFICA WEB (Foglio A4 bianco simulato)
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
+        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
+

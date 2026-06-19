@@ -1,14 +1,14 @@
 import streamlit as st
 import os
 import json
+from fpdf import FPDF
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO: Forza l'applicazione a mostrare un vero foglio A4 bianco simulato
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Anteprima a schermo stile foglio A4)
 st.markdown("""
     <style>
-    /* Contenitore stile foglio Word A4 */
     .foglio-word {
         background-color: #ffffff !important;
         color: #000000 !important;
@@ -21,8 +21,6 @@ st.markdown("""
         line-height: 1.6 !important;
         font-size: 16px !important;
     }
-    
-    /* Intestazione formale per Scuola Superiore */
     .tabella-intestazione {
         width: 100% !important;
         border-collapse: collapse !important;
@@ -36,8 +34,6 @@ st.markdown("""
         border: none !important;
         padding: 6px 0 !important;
     }
-    
-    /* Salto pagina visivo ed effettivo per la stampa */
     .salto-pagina {
         page-break-before: always !important;
         break-before: page !important;
@@ -47,6 +43,52 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
+
+# ==========================================================
+# CLASSE PER LA GENERAZIONE DEL FILE PDF COMPATIBILE
+# ==========================================================
+class PDFVerifica(FPDF):
+    def header(self):
+        pass
+    def footer(self):
+        self.set_y(-15)
+        self.set_font("Times", "I", 9)
+        self.cell(0, 10, f"Pagina {self.page_no()}", 0, 0, "C")
+
+def genera_file_pdf(argomento, testo_compito, testo_soluzioni=None):
+    pdf = PDFVerifica()
+    pdf.add_page()
+    
+    # Intestazione formale scolastica nel PDF
+    pdf.set_font("Arial", "B", 11)
+    pdf.cell(110, 6, "Istituto d'Istruzione Superiore", 0, 0, "L")
+    pdf.cell(80, 6, "Data: ____/____/________", 0, 1, "R")
+    pdf.cell(110, 6, "Alunno/a: _____________________________________", 0, 0, "L")
+    pdf.cell(80, 6, "Classe: ____________  Sez. ____", 0, 1, "R")
+    pdf.ln(4)
+    pdf.set_font("Arial", "B", 12)
+    pdf.cell(110, 6, "Materia: Verifica scritta di approfondimento", 0, 0, "L")
+    pdf.cell(80, 6, f"Oggetto: {argomento.capitalize()}", 0, 1, "R")
+    pdf.line(10, pdf.get_y() + 2, 200, pdf.get_y() + 2)
+    pdf.ln(8)
+    
+    # Corpo del compito
+    pdf.set_font("Times", "", 11)
+    # Conversione testo per compatibilità caratteri ISO-8859-1 di FPDF
+    testo_compito_codificato = testo_compito.encode('latin-1', 'replace').decode('latin-1')
+    pdf.multi_cell(0, 6, testo_compito_codificato)
+    
+    # Sezione soluzioni (se presente viene forzata su una nuova pagina)
+    if testo_soluzioni:
+        pdf.add_page()
+        pdf.set_font("Arial", "B", 12)
+        pdf.cell(0, 8, "CHIAVE DI CORREZIONE (FOGLIO DOCENTE)", "B", 1, "L")
+        pdf.ln(6)
+        pdf.set_font("Times", "", 11)
+        testo_soluzioni_codificato = testo_soluzioni.encode('latin-1', 'replace').decode('latin-1')
+        pdf.multi_cell(0, 6, testo_soluzioni_codificato)
+        
+    return pdf.output()
 
 # ==========================================================
 # CONFIGURAZIONE CLIENT (Doppio supporto SDK Google)
@@ -65,13 +107,9 @@ except ImportError:
     usa_sdk_nuovo = False
 
 # ==========================================================
-# GESTIONE ACCOUNT MULTIPLI TRAMITE SECRETS
+# GESTIONE ACCOUNT (LOGIN)
 # ==========================================================
-UTENTI_DEFAULT = {
-    "admin@educorrect.it": "AdminPass2026",
-    "prof.test@scuola.it": "TestScuola99"
-}
-
+UTENTI_DEFAULT = {"admin@educorrect.it": "AdminPass2026", "prof.test@scuola.it": "TestScuola99"}
 UTENTI_ATTIVI = UTENTI_DEFAULT
 if "UTENTI_ABILITATI" in st.secrets:
     try:
@@ -79,13 +117,11 @@ if "UTENTI_ABILITATI" in st.secrets:
     except Exception:
         UTENTI_ATTIVI = UTENTI_DEFAULT
 
-# Controllo autenticazione
 if "autenticato" not in st.session_state:
     st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state:
     st.session_state["utente_connesso"] = ""
 
-# SCHERMATA DI LOGIN
 if not st.session_state["autenticato"]:
     st.title("🔒 Area Riservata Docenti - EduCorrect")
     email_inserita = st.text_input("Inserisci la tua Email:")
@@ -120,7 +156,7 @@ with tab1:
     
     col1, col2 = st.columns(2)
     with col1:
-        argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani, La prima guerra mondiale...")
+        argomento = st.text_input("Inserisci l'argomento della verifica:", placeholder="Es. I vulcani...")
     with col2:
         stile_domande = st.selectbox("Tipo di domande:", ["Domande miste (Vero/Falso, Crocette, Aperte)", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     
@@ -134,10 +170,9 @@ with tab1:
                 prompt_sistema = (
                     "Sei un assistente didattico esperto per i licei e gli istituti tecnici italiani (Scuola Superiore). "
                     "Genera la verifica e le relative risposte esclusivamente in lingua italiana. "
-                    "Il livello di complessità deve essere calibrati per studenti delle scuole superiori. "
+                    "Il livello di complessità deve essere calibrato per studenti delle scuole superiori. "
                     "Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di iniziare a scrivere le chiavi di correzione."
                 )
-                
                 prompt_utente = f"Crea una verifica superiore su '{argomento}'. Tipo: {stile_domande}. Numero quesiti: {numero_domande}. Includi le soluzioni in fondo precedute dal tag richiesto."
                 
                 try:
@@ -150,42 +185,43 @@ with tab1:
                     else:
                         model = dg_genai.GenerativeModel(model_name='gemini-2.5-flash', system_instruction=prompt_sistema)
                         risposta = model.generate_content(prompt_utente)
-                        testo_generato = risposta.text
+                        testo_generato = respuesta.text
                     
                     st.session_state["testo_verifica"] = testo_generato
                     st.success("Verifica generata!")
                 except Exception as e:
                     st.error(f"⚠️ Errore: {e}")
 
-    # RENDERING ANTEPRIMA E TASTO DI SCARICAMENTO DIRETTO IN FORMATO WORD (.DOC)
+    # GESTIONE ESPORTAZIONE IN PDF REALE E ANTEPRIMA GRAFICA
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
         
         st.write("### 📄 Esporta e Visualizza")
 
-        # Conversione e preparazione del testo compatibile per Microsoft Word (.doc)
-        testo_pulito_per_word = testo_grezzo.replace("[SOLUZIONI]", "\n\n--- FOGLIO CHIAVE DI CORREZIONE DOCENTE ---\n\n")
+        # Separazione pulita dei testi per la compilazione del PDF multi-pagina
+        if "[SOLUZIONI]" in testo_grezzo:
+            parti_testo = testo_grezzo.split("[SOLUZIONI]")
+            compito_testo_puro = parti_testo[0].strip()
+            soluzioni_testo_puro = parti_testo[1].strip()
+        else:
+            compito_testo_puro = testo_grezzo.strip()
+            soluzioni_testo_puro = None
 
-        # PULSANTE DI DOWNLOAD DIRETTO CONFIGURATO IN FORMATO MICROSOFT WORD
-        st.download_button(
-            label="📥 Clicca qui per Scaricare la Verifica in formato Word (.doc)",
-            data=testo_pulito_per_word,
-            file_name=f"verifica_{argomento.lower().replace(' ', '_')}.doc",
-            mime="application/msword",
-            help="Salva immediatamente il file sul PC come documento Word modificabile"
-        )
+        # Compilazione del file binario PDF
+        try:
+            pdf_bytes = genera_file_pdf(argomento, compito_testo_puro, soluzioni_testo_puro)
+            
+            # PULSANTE DI DOWNLOAD DIRETTO DEL PDF
+            st.download_button(
+                label="📥 Scarica Verifica in formato PDF (Pronta da stampare)",
+                data=pdf_bytes,
+                file_name=f"verifica_{argomento.lower().replace(' ', '_')}.pdf",
+                mime="application/pdf",
+                help="Salva la verifica direttamente in PDF sul tuo dispositivo"
+            )
+        except Exception as pdf_err:
+            st.error(f"⚠️ Impossibile generare il PDF: {pdf_err}")
 
-        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA (Foglio Word A4 bianco sullo schermo)
+        # COSTRUZIONE DELL'ANTEPRIMA GRAFICA WEB (Foglio A4 bianco simulato)
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px; font-family: Arial, sans-serif;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
-        corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
-
-        intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-
-        # Mostra il foglio Word formattato a schermo
-        st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
-
-# --- SCHEDA 2: SCANSIONA E CORREGGI ---
-with tab2:
-    st.header("Correttore di Compiti")
-    st.write("Sviluppo della sezione di valutazione automatica.")

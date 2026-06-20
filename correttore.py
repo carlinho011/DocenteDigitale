@@ -7,7 +7,7 @@ def converti_markdown_in_html(testo):
 
 def renderizza_documento_stampa(titolo, info_scuola_html, voto_html, corpo_testo_html):
     blocco_stampa_iframe = f"<div style='margin-bottom:15px;'><button onclick='window.print()' style='background-color:#0288d1;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>📥 Scarica / Stampa PDF della Correzione</button></div><div style='background-color:#ffffff;color:#000000;padding:40px;font-family:\"Times New Roman\",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;max-width:800px;margin:0 auto;'>{info_scuola_html}<h1 style='text-align:center;font-size:22px;margin-top:10px;margin-bottom:5px;'>{titolo}</h1>{voto_html}<br><div>{corpo_testo_html}</div></div><style>@media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; }} }}</style>"
-    st.components.v1.html(blocco_stampa_iframe, height=950, scrolling=True)
+    st.components.v1.html(blocco_stampa_iframe, height=1000, scrolling=True)
 
 def mostra_interfaccia_correzione(client, types):
     st.header("🔍 Valutazione dello Studente")
@@ -25,23 +25,28 @@ def mostra_interfaccia_correzione(client, types):
         elif not testo_m and not file_c:
             st.error("Inserisci l'elaborato da analizzare!")
         else:
-            with st.spinner("Analisi delle competenze in corso..."):
+            with st.spinner("Analisi delle competenze e dei passaggi in corso..."):
                 sys_c = (
-                    "Sei un docente italiano esperto in valutazione formativa e orientativa. "
-                    "Non limitarti a correggere l'esercizio: valuta la preparazione, le competenze e le lacune dello STUDENTE stesso. "
-                    "Rivolgiti sempre a lui in seconda persona ('Tu'). Non dire 'Il testo presenta', ma di' 'Tu hai dimostrato di...'. "
+                    "Sei un docente italiano esperto in valutazione formativa. "
+                    "Non limitarti a correggere l'esercizio complessivo: analizza la preparazione dello STUDENTE rivolgendoti a lui in seconda persona ('Tu'). "
                     "Stabilisci tu autonomamente i criteri accademici ideali per l'argomento.\n\n"
                     
                     "La struttura della tua risposta deve essere RIGIDAMENTE questa:\n"
                     "Inizia la primissima riga scrivendo ESATTAMENTE: VOTO: X/10\n"
                     "Nella seconda riga scrivi un profilo riassuntivo dello studente (es. 'Studente preparato ma frettoloso...').\n"
-                    "Lascia una riga vuota e organizza il resto della risposta ESATTAMENTE in queste 3 macro-aree visive utilizzando queste precise intestazioni:\n\n"
+                    "Lascia una riga vuota e organizza il resto della risposta ESATTAMENTE in queste 4 macro-aree visive utilizzando queste precise intestazioni:\n\n"
                     
                     "🟢 LE TUE COMPETENZE ACQUISITE\n"
                     "(Evidenzia qui cosa lo studente ha capito, le sue abilità logiche e i suoi punti di forza personali)\n\n"
                     
+                    "📝 REVISIONE DELL'ELABORATO PASSO-PASSO\n"
+                    "Sotto questa intestazione devi citare i passaggi specifici scritti dallo studente e valutarli uno per uno in questo modo:\n"
+                    "- Per ogni passaggio corretto scrivi: ✅ '[Frase o concetto dello studente]' -> Risposta esatta / Ottimo sviluppo.\n"
+                    "- Per ogni passaggio errato o impreciso scrivi: ❌ '[Frase o concetto errato dello studente]' \n"
+                    "  👉 Risposta giusta: [Fornisci qui la versione corretta, la spiegazione della regola o il risultato esatto].\n\n"
+                    
                     "🔴 LE TUE LACUNE DA COLMARE\n"
-                    "(Elenca qui in modo chiaro e schematico dove lo studente si è confuso, cosa non ha assimilato o gli errori concettuali ripetuti)\n\n"
+                    "(Elenca qui in modo sintetico e schematico gli errori concettuali ripetuti o le aree generali in cui lo studente si è confuso)\n\n"
                     
                     "🚀 IL TUO PIANO DI MIGLIORAMENTO\n"
                     "(Fornisci consigli pratici sul metodo di studio, argomenti specifici da ripassare ed esercizi futuri da fare)"
@@ -83,10 +88,11 @@ def mostra_interfaccia_correzione(client, types):
                 
         corpo_testo = "\n\n".join(corpo_linee)
         
-        # Sostituzione icone standard con box grafici HTML più eleganti per gli studenti
-        corpo_testo = corpo_testo.replace("🟢 LE TUE COMPETENZE ACQUISITE", "<h3 style='color:#2e7d32; border-bottom:1px solid #2e7d32; padding-bottom:5px; margin-top:20px;'>🟢 Le Tue Competenze Acquisite</h3>")
-        corpo_testo = corpo_testo.replace("🔴 LE TUE LACUNE DA COLMARE", "<h3 style='color:#c62828; border-bottom:1px solid #c62828; padding-bottom:5px; margin-top:20px;'>🔴 Le Tue Lacune da Colmare</h3>")
-        corpo_testo = corpo_testo.replace("🚀 IL TUO PIANO DI MIGLIORAMENTO", "<h3 style='color:#ef6c00; border-bottom:1px solid #ef6c00; padding-bottom:5px; margin-top:20px;'>🚀 Il Tuo Piano di Miglioramento</h3>")
+        # Sostituzione delle macro-aree con intestazioni HTML grafiche ed eleganti
+        corpo_testo = corpo_testo.replace("🟢 LE TUE COMPETENZE ACQUISITE", "<h3 style='color:#2e7d32; border-bottom:1px solid #2e7d32; padding-bottom:5px; margin-top:25px;'>🟢 Le Tue Competenze Acquisite</h3>")
+        corpo_testo = corpo_testo.replace("📝 REVISIONE DELL'ELABORATO PASSO-PASSO", "<h3 style='color:#0288d1; border-bottom:1px solid #0288d1; padding-bottom:5px; margin-top:25px;'>📝 Revisione dell'Elaborato Passo-Passo</h3>")
+        corpo_testo = corpo_testo.replace("🔴 LE TUE LACUNE DA COLMARE", "<h3 style='color:#c62828; border-bottom:1px solid #c62828; padding-bottom:5px; margin-top:25px;'>🔴 Le Tue Lacune da Colmare</h3>")
+        corpo_testo = corpo_testo.replace("🚀 IL TUO PIANO DI MIGLIORAMENTO", "<h3 style='color:#ef6c00; border-bottom:1px solid #ef6c00; padding-bottom:5px; margin-top:25px;'>🚀 Il Tuo Piano di Miglioramento</h3>")
         
         st.metric(label="Valutazione Finale", value=voto_rilevato)
         
@@ -95,4 +101,4 @@ def mostra_interfaccia_correzione(client, types):
         
         corpo_html = converti_markdown_in_html(corpo_testo).replace('\n', '<br>')
         
-        renderizza_documento_stampa("SCHEDA DI VALUTAZIONE E ORIENTAMENTO", info_html, voto_html, corpo_html)
+        renderizza_documento_stampa("SCHEDA DI VALUTAZIONE E REVISIONE", info_html, voto_html, corpo_html)

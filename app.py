@@ -1,7 +1,7 @@
 import streamlit as st
 import os, json
 
-# 1. CONFIGURAZIONE PAGINA E CSS
+# 1. SETTING PAGINA E STILI CSS A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -14,6 +14,7 @@ st.markdown("""<style>
 if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()
 try:
     from google import genai
+    from google.genai import types
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
 except Exception as e: st.error(f"Errore SDK: {e}"); st.stop()
 
@@ -83,7 +84,7 @@ elif modalita == "🔍 Scansiona e Correggi":
     with col_in:
         foto = st.camera_input("📸 OPZIONE A:")
         file_c = st.file_uploader("📂 OPZIONE B:", type=["png", "jpg", "jpeg", "pdf"])
-        testo_m = st.text_area("✍️ OPZIONE C:", height=100, placeholder="Risponses studente...")
+        testo_m = st.text_area("✍️ OPZIONE C:", height=100, placeholder="Risposte studente...")
     with col_cr: griglia = st.text_area("🔑 Criteri di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
 
     if st.button("🔎 Avvia Correzione Automatica"):
@@ -91,10 +92,16 @@ elif modalita == "🔍 Scansiona e Correggi":
         else:
             with st.spinner("Correzione in corso..."):
                 sys_c = "Sei un docente superiore italiano. Analizza il compito confrontandolo con i criteri. Restituisci l'analisi in italiano. MATEMATICA: Non usare delimitatori LaTeX, esprimi i calcoli e i simboli matematici con caratteri Unicode/HTML leggibili (es. x², √, ±, ≠, ÷). Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
-                contenuto_input = [f"Criteri:\n{griglia}\n\nCompito studente:"]
+                contenuto_input = [f"Criteri di riferimento:\n{griglia}\n\nCompito dello studente:"]
+                
                 if testo_m: contenuto_input.append(testo_m)
-                if foto: contenuto_input.append(foto)
-                if file_c: contenuto_input.append(file_c)
+                
+                # CORREZIONE ERRORE SDK: Caricamento corretto dei file multimediali tramite types.Part.from_bytes
+                if foto:
+                    contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
+                if file_c:
+                    m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
+                    contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
@@ -103,15 +110,6 @@ elif modalita == "🔍 Scansiona e Correggi":
                     if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
                         st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
                         try:
-                            risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenido_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                            risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                             st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Flash!")
                         except Exception as final_err: st.error(f"❌ Tutti i server sono saturi: {final_err}")
-                    else: st.error(f"⚠️ Errore durante la chiamata: {e}")
-
-    # IL TUO FRAMMENTO SELEZIONATO PERFETTAMENTE INDENTATO E CONVERTITO IN HTML COMPATIBILE STREAMLIT
-    if "analisi_correzione" in st.session_state:
-        cx = st.session_state["analisi_correzione"]
-        if "[VALUTAZIONE_BOX]" in cx:
-            pt = cx.split("[VALUTAZIONE_BOX]")
-            t_ut = pt[1] if len(pt) > 1 else cx
-            pg = t_ut.split("\n\n")

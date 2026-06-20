@@ -1,8 +1,7 @@
 import streamlit as st, os, json
 from fpdf import FPDF
-import correttore  # Importa il secondo file di supporto
+import correttore
 
-# 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -38,7 +37,6 @@ if st.sidebar.button("Disconnetti / Esci"):
     if "analisi_correzione" in st.session_state: del st.session_state["analisi_correzione"]
     st.rerun()
 
-# --- SEZIONE 1: GENERATORE DI VERIFICHE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe"); col1, col2, col3 = st.columns(3)
     with col1: argomento = st.text_input("Argomento:", placeholder="Es. Equazioni...")
@@ -64,17 +62,14 @@ if modalita == "🚀 Genera Nuova Verifica":
                     except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
                 if risposta_ver: st.session_state["testo_verifica"] = risposta_ver; st.success("Verifica generata!")
 
+    # RIGHE AGGIORNATE PER GENERAZIONE COMPATIBILE WORD (.DOC)
     if "testo_verifica" in st.session_state:
-        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
-        
-        # Generazione PDF locale usando la funzione di supporto definita nel secondo file
-        pdf_bytes = correttore.esporta_in_pdf_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
-        st.download_button(label="📥 Scarica file PDF Verifica", data=pdf_bytes, file_name=fn, mime="application/pdf")
-        
+        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.doc"
+        doc_bytes = correttore.esporta_in_doc_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
+        st.download_button(label="📥 Scarica file Word Verifica", data=doc_bytes, file_name=fn, mime="application/msword")
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
-# --- SEZIONE 2: SCANSIONA E CORREGGI (DELEGATA AL SECONDO FILE) ---
 elif modalita == "🔍 Scansiona e Correggi":
     correttore.mostra_interfaccia_correzione(client, types)

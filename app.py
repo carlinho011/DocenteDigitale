@@ -1,7 +1,6 @@
 import streamlit as st
 import os
 import json
-import google.generativeai as genai
 
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -45,13 +44,19 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google Generative AI SDK Stabile)
+# CONFIGURAZIONE CLIENT (Nuovo SDK Google GenAI Ufficiale)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-genai.configure(api_key=st.secrets["GEMINI_KEY"])
+try:
+    from google import genai
+    from google.genai import types
+    client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
+except Exception as e:
+    st.error(f"Errore caricamento nuovo SDK Google: {e}")
+    st.stop()
 
 # ==========================================================
 # GESTIONE ACCOUNT (LOGIN)
@@ -135,9 +140,12 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    # Impostato gemini-1.5-flash per evitare i blocchi di quota 429 dell'altro modello
-                    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
-                    risposta = model.generate_content(prompt_utente)
+                    # Utilizzo nativo e sicuro del nuovo modello gemini-2.5-flash
+                    risposta = client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=prompt_utente,
+                        config={'system_instruction': prompt_sistema, 'temperature': 0.6}
+                    )
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
@@ -147,11 +155,10 @@ if modalita == "🚀 Genera Nuova Verifica":
         testo_grezzo = st.session_state['testo_verifica']
         st.write("### 📄 Esporta Documento")
         
-        # Nome del file PDF dinamico basato sull'argomento
         slug_argomento = argomento.lower().replace(' ', '_')
         nome_file_pdf = f"verifica_{difficolta}_{slug_argomento}.pdf"
 
-        # IL TASTO PDF REALE CLICCABILE (Niente comandi da tastiera, usa html2pdf da sorgente esterna)
+        # IL TASTO PDF DIRETTO FUNZIONANTE (Nessuna tastiera, estrazione tramite html2pdf)
         script_pdf_pulsante = f"""
             <div style="margin-bottom: 20px;">
                 <button onclick="scaricaFilePDF()" style="
@@ -187,7 +194,6 @@ if modalita == "🚀 Genera Nuova Verifica":
                 }}
             </script>
         """
-        # Renderizza il pulsante grafico visibile a schermo
         st.components.v1.html(script_pdf_pulsante, height=75)
 
         # Costruzione dell'anteprima grafica (Foglio Word A4 bianco)
@@ -197,11 +203,9 @@ if modalita == "🚀 Genera Nuova Verifica":
 
         intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # Mostra il foglio Word con l'ID agganciato dal pulsante JavaScript sopra
         st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{intestazione_word_html}{corpo_documento_html}</div>", unsafe_allow_html=True)
 
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
-    st.write("Inserisci l'elaborato dell'alunno per correggerlo ed emettere il voto in decimi.")

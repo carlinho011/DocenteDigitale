@@ -1,4 +1,10 @@
-import streamlit as st
+import streamlit as st, re
+
+def converti_markdown_in_html(testo):
+    # Sostituisce i doppi asterischi con i tag di grassetto HTML e pulisce i singoli asterischi degli elenchi
+    testo_pulito = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', testo)
+    testo_pulito = re.sub(r'^\s*\*\s+', r'• ', testo_pulito, flags=re.MULTILINE)
+    return testo_pulito
 
 def renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
     blocco_stampa_iframe = f"<div style='margin-bottom:15px;'><button onclick='window.print()' style='background-color:{colore_bottone};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>📥 Scarica / Stampa come PDF</button></div><div class='foglio-word' style='background-color:#ffffff;color:#000000;padding:40px;font-family:\"Times New Roman\",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;box-shadow:0px 4px 15px rgba(0,0,0,0.1);max-width:800px;margin:0 auto;'>{info_scuola_html}<h1 style='text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-top:10px;'>{titolo}</h1><br><div>{corpo_testo_html}</div></div><style>.tabella-intestazione {{ width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }} .tabella-intestazione td {{ border: none !important; padding: 6px 0 !important; }} @media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }} .foglio-word {{ border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }} }}</style>"
@@ -34,11 +40,15 @@ def mostra_interfaccia_correzione(client, types):
                     risp_pro = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                     risposta_ricevuta = risp_pro.text
                 except Exception:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
                         risp_flash = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                         risposta_ricevuta = risp_flash.text
-                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
+                    except Exception:
+                        st.warning("⚠️ Linee 2.5 sature. Attivazione linea d'emergenza Gemini 1.5...")
+                        try:
+                            risp_15 = client.models.generate_content(model='gemini-1.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                            risposta_ricevuta = risp_15.text
+                        except Exception as err_critico: st.error(f"❌ Server di Google saturi: {err_critico}")
                 
                 if risposta_ricevuta: 
                     st.session_state["analisi_correzione"] = risposta_ricevuta
@@ -52,15 +62,18 @@ def mostra_interfaccia_correzione(client, types):
         
         if tag_trovato:
             parti = cx.split(tag_trovato)
-            # FIX STRUTTURALE: Se split ha successo, estrae la stringa pulita per evitare l'AttributeError sulla lista
             testo_vero = parti[1] if len(parti) > 1 else parti[0]
             paragrafi = [p.strip() for p in testo_vero.split("\n\n") if p.strip()]
             primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
             corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
             
-            st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+            # Converte il markdown in HTML per attivare il grassetto reale ed eliminare gli asterischi
+            primo_paragrafo_html = converti_markdown_in_html(primo_paragrafo).replace('\n', '<br>')
+            corpo_esteso_html = converti_markdown_in_html(corpo_esteso).replace('\n', '<br>')
+            
+            st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo_html}</div>", unsafe_allow_html=True)
             i_corr_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: 2026</td></tr><tr><td>Alunno/a: {nome_alunno}</td><td style='text-align:right;'>Oggetto: {arg_compito}</td></tr></table>"
-            c_corr_html = corpo_esteso.replace('\n', '<br>')
-            renderizza_documento_stampa(f"Scheda di Correzione: {nome_alunno}", arg_compito.capitalize(), i_corr_html, c_corr_html, "#0288d1")
+            renderizza_documento_stampa(f"Scheda di Correzione: {nome_alunno}", arg_compito.capitalize(), i_corr_html, corpo_esteso_html, "#0288d1")
         else:
-            st.markdown(f"<div class='foglio-word'><h3>🔍 Analisi di Correzione</h3><br>{cx.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+            cx_html = converti_markdown_in_html(cx).replace('\n', '<br>')
+            st.markdown(f"<div class='foglio-word'><h3>🔍 Analisi di Correzione</h3><br>{cx_html}</div>", unsafe_allow_html=True)

@@ -9,7 +9,6 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
     pdf.set_font("Helvetica", 'B', size=15); pdf.cell(0, 10, txt=titolo, ln=True, align='C'); pdf.ln(5)
     pdf.set_font("Helvetica", size=11)
     
-    # Pre-pulizia dei caratteri Unicode non supportati dai font standard FPDF
     mappa_caratteri = {
         "“": '"', "”": '"', "‘": "'", "’": "'", "–": "-", "—": "-",
         "²": "^2", "³": "^3", "√": "radice_di", "±": "+/-", "≠": "!=", 
@@ -20,7 +19,6 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
         linea = linea.strip()
         if not linea: pdf.ln(4); continue
         
-        # Applica la mappa di pulizia
         for carattere_speciale, sostituto in mappa_caratteri.items():
             linea = linea.replace(carattere_speciale, sostituto)
             
@@ -32,8 +30,18 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
             pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
             continue
             
-        # Forza la codifica pulita eliminando ogni residuo Unicode estraneo rimasto
-        linea_sicura = linea.encode('latin-1', 'replace').decode('latin-1')
+        # FIX MARGINI DEFINTIVO: Spezza forzatamente le stringhe lunghe prive di spazi prima di inviarle a multi_cell
+        parole = linea.split(' ')
+        linea_riparata = []
+        for p in parole:
+            if len(p) > 40:
+                chunks = [p[i:i+40] for i in range(0, len(p), 40)]
+                linea_riparata.append(" ".join(chunks))
+            else:
+                linea_riparata.append(p)
+        linea_finale = " ".join(linea_riparata)
+        
+        linea_sicura = linea_finale.encode('latin-1', 'replace').decode('latin-1')
         pdf.multi_cell(0, 6, txt=linea_sicura)
         
     return pdf.output()

@@ -104,6 +104,8 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
+                
+                # REFUZO AGGIORNATO DA 'contenido_input' A 'contenuto_input'
                 if file_c:
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
@@ -115,9 +117,7 @@ elif modalita == "🔍 Scansiona e Correggi":
                 except Exception as err_pro:
                     st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenido_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                         risposta_ricevuta = risp.text
                     except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
                 
-                if risposta_ricevuta: 
-                    st.session_state["analisi_correzione"] = risposta_ricevuta

@@ -1,22 +1,28 @@
 import streamlit as st
 
-def esporta_in_doc_nativo(titolo, intestazione, testo_principale):
-    # Genera un file HTML formattato leggibile nativamente da Microsoft Word e Google Doc
-    c_html = testo_principale.replace('\n', '<br>').replace("[SOLUZIONI]", "<br><br><hr><h2>🔑 CHIAVE DI CORREZIONE (DOCENTE)</h2><br>")
-    documento_completo = f"""
-    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://w3.org'>
-    <head><title>{titolo}</title><style>body {{ font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.5; }}</style></head>
-    <body>
-        <h2>Istituto Superiore - EduCorrect</h2>
-        <h3>Oggetto: {intestazione}</h3>
-        <hr>
-        <h1 style='text-align:center;'>{titolo}</h1>
+def renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
+    # Componente nativo per forzare il salvataggio o la stampa in PDF escludendo i menu del sito
+    blocco_stampa_iframe = f"""
+    <div style="margin-bottom:15px;">
+        <button onclick="window.print()" style="background-color:{colore_bottone};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa come PDF</button>
+    </div>
+    <div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;box-shadow:0px 4px 15px rgba(0,0,0,0.1);max-width:800px;margin:0 auto;">
+        {info_scuola_html}
+        <h1 style="text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-top:10px;">{titolo}</h1>
         <br>
-        <p>{c_html}</p>
-    </body>
-    </html>
+        <div>{corpo_testo_html}</div>
+    </div>
+    <style>
+        .tabella-intestazione {{ width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }}
+        .tabella-intestazione td {{ border: none !important; padding: 6px 0 !important; }}
+        @media print {{
+            button {{ display: none !important; }}
+            body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }}
+            .foglio-word {{ border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }}
+        }}
+    </style>
     """
-    return documento_completo.encode('utf-8')
+    st.components.v1.html(blocco_stampa_iframe, height=900, scrolling=True)
 
 def mostra_interfaccia_correzione(client, types):
     st.header("🔍 Correttore Intelligente di Compiti")
@@ -34,7 +40,7 @@ def mostra_interfaccia_correzione(client, types):
         if not foto and not file_c and not testo_m: st.error("Inserisci un compito!")
         elif not nome_alunno or not arg_compito: st.error("Compila nome e argomento!")
         else:
-            with st.spinner("Correzione in corso con modello Pro ad alta precisione..."):
+            with st.spinner("Correzione in corso..."):
                 sys_c = "Sei un docente superiore italiano. Analizza il compito confrontandolo con i criteri. Restituisci l'analisi in italiano. Inserisci OBBLIGATORIAMENTE all'inizio della risposta la stringa [VALUTAZIONE_BOX] seguita dal voto in decimi e una nota motivazionale breve. Subito dopo scrivi il corpo della correzione."
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
@@ -45,12 +51,12 @@ def mostra_interfaccia_correzione(client, types):
                 
                 risposta_ricevuta = None
                 try:
-                    risp_pro = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    risp_pro = client.models.generate_content(model='gemini-2.5-pro', contents=contenido_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                     risposta_ricevuta = risp_pro.text
                 except Exception:
                     st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
-                        risp_flash = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                        risp_flash = client.models.generate_content(model='gemini-2.5-flash', contents=contenido_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                         risposta_ricevuta = risp_flash.text
                     except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
                 
@@ -60,14 +66,6 @@ def mostra_interfaccia_correzione(client, types):
 
     if "analisi_correzione" in st.session_state:
         cx = st.session_state["analisi_correzione"]
-        fn_corr = f"corr_{nome_alunno.lower().replace(' ', '_')}.doc"
-        t_pdf = f"Correzione: {nome_alunno}"
-        text_p = cx.replace("[VALUTAZIONE_BOX]", "")
-        
-        # SISTEMA SCARICAMENTO WORD DOCUMENT (Indistruttibile)
-        doc_bytes = esporta_in_doc_nativo(t_pdf, arg_compito.capitalize(), text_p)
-        st.download_button(label="📥 Scarica file Word Correzione", data=doc_bytes, file_name=fn_corr, mime="application/msword")
-        
         tag_trovato = None
         for t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX", "valutazione_box"]:
             if t in cx: tag_trovato = t; break
@@ -81,6 +79,9 @@ def mostra_interfaccia_correzione(client, types):
             
             st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
             i_corr_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: 2026</td></tr><tr><td>Alunno/a: {nome_alunno}</td><td style='text-align:right;'>Oggetto: {arg_compito}</td></tr></table>"
-            st.markdown(f"<div class='foglio-word'>{i_corr_html}<h3>🔍 Analisi degli Errori e Soluzioni</h3><br>{corpo_esteso.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+            c_corr_html = corpo_esteso.replace('\n', '<br>')
+            
+            # Generatore Componente PDF per la Correzione
+            renderizza_documento_stampa(f"Scheda di Correzione: {nome_alunno}", arg_compito.capitalize(), i_corr_html, c_corr_html, "#0288d1")
         else:
             st.markdown(f"<div class='foglio-word'><h3>🔍 Analisi di Correzione</h3><br>{cx.replace('\n', '<br>')}</div>", unsafe_allow_html=True)

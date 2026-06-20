@@ -7,7 +7,6 @@ st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
     .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
-    .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
@@ -80,21 +79,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # SOLUZIONE 1 COMPATIBILE CLOUD: Pulsante interno all'iframe che stampa solo il contenuto del suo blocco
-        blocco_verifica_iframe = f"""
-        <div style="margin-bottom:15px;">
-            <button onclick="window.print()" style="background-color:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa PDF Verifica</button>
-        </div>
-        <div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">
-            {i_html}{c_html}
-        </div>
-        <style>
-            @media print {{
-                button {{ display: none !important; }}
-                body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }}
-            }}
-        </style>
-        """
+        blocco_verifica_iframe = f"""<div style="margin-bottom:15px;"><button onclick="window.print()" style="background-color:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa PDF Verifica</button></div><div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">{i_html}{c_html}</div><style>@media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }} }}</style>"""
         st.components.v1.html(blocco_verifica_iframe, height=1000, scrolling=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
@@ -130,3 +115,9 @@ elif modalita == "🔍 Scansiona e Correggi":
                 except Exception as err_pro:
                     st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenido_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                        risposta_ricevuta = risp.text
+                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
+                
+                if risposta_ricevuta: 
+                    st.session_state["analisi_correzione"] = risposta_ricevuta

@@ -52,8 +52,9 @@ def mostra_interfaccia_correzione(client, types):
         
         if tag_trovato:
             parti = cx.split(tag_trovato)
-            testo_da_dividere = parti if len(parti) > 1 else cx
-            paragrafi = [p.strip() for p in testo_da_dividere.split("\n\n") if p.strip()]
+            # FIX STRUTTURALE: Se split ha successo, estrae la stringa pulita per evitare l'AttributeError sulla lista
+            testo_vero = parti[1] if len(parti) > 1 else parti[0]
+            paragrafi = [p.strip() for p in testo_vero.split("\n\n") if p.strip()]
             primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
             corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
             

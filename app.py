@@ -50,7 +50,7 @@ if not st.session_state["autenticato"]:
     st.stop()
 
 st.sidebar.title("🛠️ Menu EduCorrect")
-st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
+st.sidebar.sidebar_page = st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
 modalita = st.sidebar.radio("Scegli l'operazione:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 st.sidebar.markdown("---")
@@ -82,19 +82,10 @@ if modalita == "🚀 Genera Nuova Verifica":
             with st.spinner("Generazione in corso..."):
                 sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML (es. usare x², √x, ±, ≠, ≤, ≥, ÷, ×, ∫, λ, π, ½, ¼, ∛). Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
-                
-                risposta_ver = None
                 try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                    risposta_ver = risp.text
-                except Exception:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                        risposta_ver = risp.text
-                    except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
-                
-                if risposta_ver: st.session_state["testo_verifica"] = risposta_ver; st.success("Verifica generata!")
+                    risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                    st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata!")
+                except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
@@ -130,7 +121,16 @@ elif modalita == "🔍 Scansiona e Correggi":
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
-                # REVISIONE COMPLETA STRUTTURA: Chiamate sequenziali pulite separate a cascata
-                risposta_ricevuta = None
+                # CHIAMATA DIRETTA AD ALTA VELOCITÀ - ELIMINATO OGNI BLOCCO TRY/EXCEPT INSIDIOSO
                 try:
-                    risp_pro = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    risp_flash = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    st.session_state["analisi_correzione"] = risp_flash.text
+                    st.success("Correzione completata!")
+                except Exception as err_flash:
+                    st.error(f"❌ Server saturi o errore chiave API: {err_flash}")
+
+    if "analisi_correzione" in st.session_state:
+        cx = st.session_state["analisi_correzione"]
+        tag_trovato = None
+        for t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX", "valutazione_box"]:
+            if t in cx: tag_trovato = t; break

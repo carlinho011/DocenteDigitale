@@ -83,17 +83,18 @@ if modalita == "🚀 Genera Nuova Verifica":
                 sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML (es. usare x², √x, ±, ≠, ≤, ≥, ÷, ×, ∫, λ, π, ½, ¼, ∛). Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
                 
-                # LOOP CICLICO LINEARE PER IL COPIATORE
                 risposta_ver = None
-                for modello in ['gemini-2.5-pro', 'gemini-2.5-flash']:
+                try:
+                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                    risposta_ver = risp.text
+                except Exception:
+                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
-                        risp = client.models.generate_content(model=modello, contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                        risposta_ver = risp.text; break
-                    except Exception:
-                        if modello == 'gemini-2.5-pro': st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                        risposta_ver = risp.text
+                    except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
                 
                 if risposta_ver: st.session_state["testo_verifica"] = risposta_ver; st.success("Verifica generata!")
-                else: st.error("❌ Impossibile completare la generazione.")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
@@ -129,9 +130,7 @@ elif modalita == "🔍 Scansiona e Correggi":
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
-                # LOGICA VELOCE E COMPATTA SENZA ANNIDAMENTI DI TRY/EXCEPT SULLO STESSO LIVELLO
+                # REVISIONE COMPLETA STRUTTURA: Chiamate sequenziali pulite separate a cascata
                 risposta_ricevuta = None
-                for mod in ['gemini-2.5-pro', 'gemini-2.5-flash']:
-                    try:
-                        risp = client.models.generate_content(model=mod, contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                        risposta_ricevuta = risp.text; break
+                try:
+                    risp_pro = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})

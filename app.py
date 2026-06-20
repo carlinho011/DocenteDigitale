@@ -69,13 +69,11 @@ if modalita == "🚀 Genera Nuova Verifica":
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                     st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata!")
                 except Exception as e:
-                    if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
-                        st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
-                        try:
-                            risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                            st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
-                        except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
-                    else: st.error(f"⚠️ Errore generico: {e}")
+                    st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
+                    try:
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                        st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
+                    except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
@@ -112,7 +110,10 @@ elif modalita == "🔍 Scansiona e Correggi":
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
-                # LOGICA SEQUENZIALE LINEARE: PREVIENE GLI INDENTATION ERROR
+                # CHIAMATA SEQUENZIALE SICURA AL 100% SENZA ANNIDAMENTI DI SPAZI
                 risposta_ricevuta = None
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    risposta_ricevuta = risp.text
+                except Exception as err_pro:
+                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")

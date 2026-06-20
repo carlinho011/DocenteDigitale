@@ -1,6 +1,4 @@
-import streamlit as st
-
-def renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
+import streamlit as stdef renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
     blocco_stampa_iframe = f"""
     <div style="margin-bottom:15px;">
         <button onclick="window.print()" style="background-color:{colore_bottone};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa come PDF</button>

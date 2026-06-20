@@ -139,8 +139,8 @@ if modalita == "🚀 Genera Nuova Verifica":
                 )
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
+                # TENTATIVO 1: Usiamo il modello standard richiesto
                 try:
-                    # Utilizzo nativo e sicuro del nuovo modello gemini-2.5-flash
                     risposta = client.models.generate_content(
                         model='gemini-2.5-flash',
                         contents=prompt_utente,
@@ -149,7 +149,21 @@ if modalita == "🚀 Genera Nuova Verifica":
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
-                    st.error(f"⚠️ Errore di generazione: {e}")
+                    # TENTATIVO 2 (FALLBACK): Se la quota del 2.5 è esaurita (Errore 429), passiamo gratis al modello 1.5
+                    if "429" in str(e) or "quota" in str(e).lower():
+                        st.warning("⚠️ Quota giornaliera Gemini 2.5 esaurita. Switch automatico su linea secondaria di backup...")
+                        try:
+                            risposta = client.models.generate_content(
+                                model='gemini-1.5-pro',
+                                contents=prompt_utente,
+                                config={'system_instruction': prompt_sistema, 'temperature': 0.6}
+                    )
+                            st.session_state["testo_verifica"] = risposta.text
+                            st.success("Verifica generata con successo sulla linea di backup!")
+                        except Exception as backup_err:
+                            st.error(f"❌ Anche la linea di backup è satura al momento. Riprova tra poco: {backup_err}")
+                    else:
+                        st.error(f"⚠️ Errore di generazione: {e}")
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
@@ -196,16 +210,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         """
         st.components.v1.html(script_pdf_pulsante, height=75)
 
-        # Costruzione dell'anteprima grafica (Foglio Word A4 bianco)
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
         corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
 
-        intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        
-        st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{intestazione_word_html}{corpo_documento_html}</div>", unsafe_allow_html=True)
-
-
-# --- SEZIONE 2: SCANSIONA E CORREGGI ---
-elif modalita == "🔍 Scansiona e Correggi":
-    st.header("🔍 Correttore Intelligente di Compiti")

@@ -7,7 +7,6 @@ st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
     .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
-    .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
@@ -21,13 +20,22 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
     for linea in testo_principale.split('\n'):
         linea = linea.strip()
         if not linea: pdf.ln(4); continue
+        if "---" in linea: linea = linea.replace("---", "- ")
+        if "___" in linea: linea = linea.replace("___", "_ ")
         if "[SOLUZIONI]" in linea or "CHIAVE DI CORREZIONE" in linea:
             pdf.add_page(); pdf.set_font("Helvetica", 'B', size=13)
             pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
             continue
-        if len(linea) > 75 and ' ' not in linea:
-            for chunk in [linea[i:i+75] for i in range(0, len(linea), 75)]: pdf.multi_cell(0, 6, txt=chunk)
-        else: pdf.multi_cell(0, 6, txt=linea)
+        parole = linea.split(' ')
+        linea_riparata = []
+        for p in parole:
+            if len(p) > 50:
+                chunks = [p[i:i+50] for i in range(0, len(p), 50)]
+                linea_riparata.append(" ".join(chunks))
+            else: linea_riparata.append(p)
+        linea = " ".join(linea_riparata)
+        try: pdf.multi_cell(0, 6, txt=linea)
+        except Exception: pdf.multi_cell(0, 6, txt=linea[:60] + "...")
     return pdf.output()
 
 if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()
@@ -103,7 +111,6 @@ if modalita == "🚀 Genera Nuova Verifica":
         st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
-# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     col_stud, col_arg = st.columns(2)
@@ -125,44 +132,3 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
-                if file_c:
-                    m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
-                    contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
-                
-                risposta_ricevuta = None
-                try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    risposta_ricevuta = risp.text
-                except Exception as err_pro:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                        risposta_ricevuta = risp.text
-                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
-                
-                if risposta_ricevuta: 
-                    st.session_state["analisi_correzione"] = risposta_ricevuta
-                    st.success("Correzione completata!")
-
-    if "analisi_correzione" in st.session_state:
-        cx = st.session_state["analisi_correzione"]
-        if "[VALUTAZIONE_BOX]" in cx:
-            parti = cx.split("[VALUTAZIONE_BOX]")
-            testo_da_dividere = parti[1] if len(parti) > 1 else cx
-            paragrafi = testo_da_dividere.split("\n\n")
-            primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
-            corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
-            
-            st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
-            
-            if not any(v['studente'] == nome_alunno and v['argomento'] == arg_compito for v in st.session_state["registro_voti"]):
-                st.session_state["registro_voti"].append({"studente": nome_alunno, "argomento": arg_compito, "voto": primo_paragrafo.strip()[:30]})
-            
-            fn_corr = f"correzione_{nome_alunno.lower().replace(' ', '_')}.pdf"
-            pdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno: {nome_alunno}", arg_compito.capitalize(), corpo_esteso)
-            st.download_button(label="📥 Scarica PDF Correzione (Nativo)", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")
-            
-            i_corr_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: 2026</td></tr><tr><td>Alunno/a: {nome_alunno}</td><td style='text-align:right;'>Oggetto: {arg_compito}</td></tr></table>"
-            st.markdown(f"<div class='foglio-word'>{i_corr_html}<h3>🔍 Analisi degli Errori e Soluzioni</h3><br>{corpo_esteso.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
-        else:
-            st.markdown(f"<div class='foglio-word'>{cx.replace('\n', '<br>')}</div>", unsafe_allow_html=True)

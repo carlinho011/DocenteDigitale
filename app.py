@@ -112,6 +112,7 @@ elif modalita == "🔍 Scansiona e Correggi":
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
+                # LOGICA DI FALLBACK CORRETTA (Senza blocchi asimmetrici o SyntaxError)
+                modello_selezionato = 'gemini-2.5-pro'
                 try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Pro!")
+                    risp = client.models.generate_content(model=modello_selezionato, contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})

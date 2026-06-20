@@ -1,24 +1,7 @@
-import streamlit as stdef renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
-    blocco_stampa_iframe = f"""
-    <div style="margin-bottom:15px;">
-        <button onclick="window.print()" style="background-color:{colore_bottone};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa come PDF</button>
-    </div>
-    <div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;box-shadow:0px 4px 15px rgba(0,0,0,0.1);max-width:800px;margin:0 auto;">
-        {info_scuola_html}
-        <h1 style="text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-top:10px;">{titolo}</h1>
-        <br>
-        <div>{corpo_testo_html}</div>
-    </div>
-    <style>
-        .tabella-intestazione {{ width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }}
-        .tabella-intestazione td {{ border: none !important; padding: 6px 0 !important; }}
-        @media print {{
-            button {{ display: none !important; }}
-            body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }}
-            .foglio-word {{ border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }}
-        }}
-    </style>
-    """
+import streamlit as st
+
+def renderizza_documento_stampa(titolo, intestazione, info_scuola_html, corpo_testo_html, colore_bottone):
+    blocco_stampa_iframe = f"<div style='margin-bottom:15px;'><button onclick='window.print()' style='background-color:{colore_bottone};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>📥 Scarica / Stampa come PDF</button></div><div class='foglio-word' style='background-color:#ffffff;color:#000000;padding:40px;font-family:\"Times New Roman\",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;box-shadow:0px 4px 15px rgba(0,0,0,0.1);max-width:800px;margin:0 auto;'>{info_scuola_html}<h1 style='text-align:center;font-size:22px;border-bottom:2px solid #000;padding-bottom:10px;margin-top:10px;'>{titolo}</h1><br><div>{corpo_testo_html}</div></div><style>.tabella-intestazione {{ width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }} .tabella-intestazione td {{ border: none !important; padding: 6px 0 !important; }} @media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }} .foglio-word {{ border: none !important; box-shadow: none !important; padding: 0 !important; max-width: 100% !important; }} }}</style>"
     st.components.v1.html(blocco_stampa_iframe, height=900, scrolling=True)
 
 def mostra_interfaccia_correzione(client, types):

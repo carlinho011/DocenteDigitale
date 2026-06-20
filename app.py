@@ -105,7 +105,7 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = []
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(foto)
-                if file_c: contenido_input.append(file_c)
+                if file_c: contenuto_input.append(file_c)
                 
                 user_c = f"Ecco i criteri di riferimento:\n{griglia}\n\nEcco il compito dello studente da correggere."
                 contenuto_input.insert(0, user_c)

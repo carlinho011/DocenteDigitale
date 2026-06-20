@@ -6,13 +6,13 @@ import google.generativeai as genai
 # 1. IMPOSTAZIONI DELLA PAGINA WEB
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 
-# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE
+# STILE GRAFICO APPLICATO ALL'INTERA APPLICAZIONE (Anteprima a schermo stile foglio A4)
 st.markdown("""
     <style>
     .foglio-word {
         background-color: #ffffff !important;
         color: #000000 !important;
-        padding: 40px 50px !important;
+        padding: 50px 60px !important;
         margin: 20px auto !important;
         max-width: 800px !important;
         box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.15) !important;
@@ -45,13 +45,12 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ==========================================================
-# CONFIGURAZIONE CLIENT (Google Generative AI SDK)
+# CONFIGURAZIONE CLIENT (Google Generative AI SDK Stabile)
 # ==========================================================
 if "GEMINI_KEY" not in st.secrets:
     st.error("⚠️ Configurazione incompleta: Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
-# Configurazione standard e pulita
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
 # ==========================================================
@@ -136,8 +135,8 @@ if modalita == "🚀 Genera Nuova Verifica":
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
                 try:
-                    # AGGIORNATO: Utilizzo del modello di produzione gemini-2.5-flash
-                    model = genai.GenerativeModel('gemini-2.5-flash', system_instruction=prompt_sistema)
+                    # Impostato gemini-1.5-flash per evitare i blocchi di quota 429 dell'altro modello
+                    model = genai.GenerativeModel('gemini-1.5-flash', system_instruction=prompt_sistema)
                     risposta = model.generate_content(prompt_utente)
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
@@ -146,55 +145,63 @@ if modalita == "🚀 Genera Nuova Verifica":
 
     if "testo_verifica" in st.session_state:
         testo_grezzo = st.session_state['testo_verifica']
-        st.info("💡 Premi **CTRL + P** (Windows) o **CMD + P** (Mac) per stampare direttamente o salvare in PDF.")
+        st.write("### 📄 Esporta Documento")
         
+        # Nome del file PDF dinamico basato sull'argomento
+        slug_argomento = argomento.lower().replace(' ', '_')
+        nome_file_pdf = f"verifica_{difficolta}_{slug_argomento}.pdf"
+
+        # IL TASTO PDF REALE CLICCABILE (Niente comandi da tastiera, usa html2pdf da sorgente esterna)
+        script_pdf_pulsante = f"""
+            <div style="margin-bottom: 20px;">
+                <button onclick="scaricaFilePDF()" style="
+                    background-color: #2e7d32;
+                    color: white;
+                    padding: 14px 28px;
+                    border: none;
+                    border-radius: 6px;
+                    cursor: pointer;
+                    font-size: 16px;
+                    font-weight: bold;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.15);
+                ">
+                    📥 Scarica Verifica in PDF (Tasto Diretto)
+                </button>
+            </div>
+            <script src="https://cloudflare.com"></script>
+            <script>
+                function scaricaFilePDF() {{
+                    var target = window.parent.document.getElementById("blocco-foglio-word-target");
+                    if (!target) {{
+                        alert("Attendi il caricamento completo dell'anteprima prima di scaricare.");
+                        return;
+                    }}
+                    var configurazione = {{
+                        margin: 12,
+                        filename: '{nome_file_pdf}',
+                        image: {{ type: 'jpeg', quality: 0.98 }},
+                        html2canvas: {{ scale: 2, useCORS: true, letterRendering: true }},
+                        jsPDF: {{ unit: 'mm', format: 'a4', orientation: 'portrait' }}
+                    }};
+                    html2pdf().set(configurazione).from(target).save();
+                }}
+            </script>
+        """
+        # Renderizza il pulsante grafico visibile a schermo
+        st.components.v1.html(script_pdf_pulsante, height=75)
+
+        # Costruzione dell'anteprima grafica (Foglio Word A4 bianco)
         testo_html = testo_grezzo.replace('\n', '<br>')
         div_salto_pagina = "<div class='salto-pagina'><h3 style='color: #000000; border-bottom: 2px solid #000000; padding-bottom: 5px;'>🔑 CHIAVE DI CORREZIONE (FOGLIO DOCENTE)</h3><br>"
         corpo_documento_html = testo_html.replace("[SOLUZIONI]", div_salto_pagina + "</div>")
 
         intestazione_word_html = f"<table class='tabella-intestazione'><tr><td style='width: 60%; font-weight: bold;'>Istituto d'Istruzione Superiore</td><td style='width: 40%; text-align: right; font-weight: bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _____________________________________</td><td style='text-align: right;'>Classe: ____________  Sez. ____</td></tr><tr><td style='padding-top: 10px; font-size: 16px; font-weight: bold;'>Materia: Verifica scritta di approfondimento ({difficolta.capitalize()})</td><td style='padding-top: 10px; text-align: right; font-size: 16px; font-weight: bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        st.markdown("<div class='foglio-word'>" + intestazione_word_html + corpo_documento_html + "</div>", unsafe_allow_html=True)
+        
+        # Mostra il foglio Word con l'ID agganciato dal pulsante JavaScript sopra
+        st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{intestazione_word_html}{corpo_documento_html}</div>", unsafe_allow_html=True)
 
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     st.write("Inserisci l'elaborato dell'alunno per correggerlo ed emettere il voto in decimi.")
-    
-    col_input, col_criteri = st.columns(2)
-    
-    with col_input:
-        file_compito = st.file_uploader("📂 Carica file (Immagine del compito o PDF):", type=["png", "jpg", "jpeg", "pdf"])
-        testo_manuale = st.text_area("✍️ Incolla qui il testo scritto a mano:", height=150, placeholder="Risposte dello studente...")
-        
-    with col_criteri:
-        griglia_riferimento = st.text_area("🔑 Criteri di valutazione o soluzioni di riferimento:", 
-                                           value=st.session_state.get("testo_verifica", ""), height=230,
-                                           placeholder="I dati della verifica generata nell'altra sezione vengono copiati qui in automatico.")
-
-    if st.button("🔎 Avvia Correzione Automatica"):
-        if not file_compito and not testo_manuale:
-            st.error("Inserisci un compito inserendo del testo o caricando una foto.")
-        else:
-            with st.spinner("Analisi del compito e calcolo del voto in corso..."):
-                prompt_correzione_sistema = (
-                    "Sei un docente di scuola superiore italiana severo, preciso e costruttivo. "
-                    "Analizza il compito dello studente confrontandolo con i criteri forniti. "
-                    "Restituisci l'analisi strutturata in italiano secondo questo schema:\n"
-                    "1. Riassunto del compito analizzato.\n"
-                    "2. Analisi degli errori rilevati.\n"
-                    "3. Elementi positivi riscontrati.\n"
-                    "4. Suggerimenti mirati.\n"
-                    "5. VALUTAZIONE FINALE: Voto numerico in decimi (da 2 a 10)."
-                )
-                
-                contenuto_richiesta = []
-                
-                if file_compito:
-                    file_bytes = file_compito.read()
-                    immagine_struttura = {"mime_type": file_compito.type, "data": file_bytes}
-                    contenuto_richiesta.append(immagine_struttura)
-                
-                testo_da_inviare = f"Compito dello studente:\n{testo_manuale}\n\nCriteri/Soluzioni:\n{griglia_riferimento}"
-                contenuto_richiesta.append(testo_da_inviare)
-                

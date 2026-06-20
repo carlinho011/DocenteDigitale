@@ -1,7 +1,6 @@
 import streamlit as st
 import os, json
 
-# 1. SETTING PAGINA E STILI CSS A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -41,7 +40,6 @@ if st.sidebar.button("Disconnetti / Esci"):
     if "analisi_correzione" in st.session_state: del st.session_state["analisi_correzione"]
     st.rerun()
 
-# --- SEZIONE 1: GENERATORE DI VERIFICHE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe")
     col1, col2, col3 = st.columns(3)
@@ -77,7 +75,6 @@ if modalita == "🚀 Genera Nuova Verifica":
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
-# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     col_in, col_cr = st.columns(2)
@@ -93,12 +90,8 @@ elif modalita == "🔍 Scansiona e Correggi":
             with st.spinner("Correzione in corso..."):
                 sys_c = "Sei un docente superiore italiano. Analizza il compito confrontandolo con i criteri. Restituisci l'analisi in italiano. MATEMATICA: Non usare delimitatori LaTeX, esprimi i calcoli e i simboli matematici con caratteri Unicode/HTML leggibili (es. x², √, ±, ≠, ÷). Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
                 contenuto_input = [f"Criteri di riferimento:\n{griglia}\n\nCompito dello studente:"]
-                
                 if testo_m: contenuto_input.append(testo_m)
-                
-                # CORREZIONE ERRORE SDK: Caricamento corretto dei file multimediali tramite types.Part.from_bytes
-                if foto:
-                    contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
+                if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
                 if file_c:
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
@@ -113,3 +106,9 @@ elif modalita == "🔍 Scansiona e Correggi":
                             risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                             st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Flash!")
                         except Exception as final_err: st.error(f"❌ Tutti i server sono saturi: {final_err}")
+                    else: st.error(f"⚠️ Errore durante la chiamata: {e}")
+
+    # PARSER DI VISUALIZZAZIONE CORRETTO E SICURO AL 100%
+    if "analisi_correzione" in st.session_state:
+        cx = st.session_state["analisi_correzione"]
+        if "[VALUTAZIONE_BOX]" in cx:

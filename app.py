@@ -7,7 +7,6 @@ st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
     .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
-    .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
@@ -52,7 +51,7 @@ if st.sidebar.button("Disconnetti / Esci"):
 if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe")
     col1, col2, col3 = st.columns(3)
-    with col1: argomento = st.text_input("Argomento:", placeholder="Es. Equazioni di secondo grado...")
+    with col1: argomento = st.text_input("Argomento:", placeholder="Es. Equazioni...")
     with col2: stile = st.selectbox("Tipo:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     with col3: diff = st.selectbox("Difficoltà:", ["facile", "media", "difficile"])
     num = st.slider("Numero domande:", 1, 20, 5)
@@ -61,24 +60,21 @@ if modalita == "🚀 Genera Nuova Verifica":
         if not argomento: st.error("Scrivi un argomento!")
         else:
             with st.spinner("Generazione in corso..."):
-                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML (es. usare x², √x, ±, ≠, ≤, ≥, ÷, ×, ∫, λ, π, ½, ¼, ∛). Per le frazioni scrivi numeratore/denominatore o usa la linea orizzontale. Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
+                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML (es. usare x², √x, ±, ≠, ≤, ≥, ÷, ×, ∫, λ, π, ½, ¼, ∛). Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                     st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata!")
                 except Exception as e:
-                    st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
+                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
                         risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                         st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
                     except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
 
     if "testo_verifica" in st.session_state:
-        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
-        
-        # SISTEMA DI STAMPA PDF LEGGERO E NATIVO: Usa comandi di stampa del browser sicuri al 100%
+        tg = st.session_state['testo_verifica']
         st.button("📥 Stampa / Salva in PDF (Usa Ctrl+P o clicca destro -> Stampa)", on_click=st.toast, args=("Seleziona 'Salva come PDF' nella finestra che si apre!",))
-        
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
@@ -120,8 +116,16 @@ elif modalita == "🔍 Scansiona e Correggi":
                         risposta_ricevuta = risp.text
                     except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
                 
-                if risposta_ricevuta: st.session_state["analisi_correzione"] = risposta_ricevuta; st.success("Correzione completata!")
+                if risposta_ricevuta: 
+                    st.session_state["analisi_correzione"] = risposta_ricevuta; st.success("Correzione completata!")
 
+    # INTEGRATO ALL'INTERNO DI ELIF CON CORRETTO ALLINEAMENTO ED ESTRAZIONE SICURA INDICI
     if "analisi_correzione" in st.session_state:
         cx = st.session_state["analisi_correzione"]
         if "[VALUTAZIONE_BOX]" in cx:
+            parti = cx.split("[VALUTAZIONE_BOX]")
+            testo_da_dividere = parti[1] if len(parti) > 1 else cx
+            paragrafi = testo_da_dividere.split("\n\n")
+            primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
+            corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
+            

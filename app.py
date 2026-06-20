@@ -1,5 +1,4 @@
 import streamlit as st, os, json
-from fpdf import FPDF
 import correttore
 
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -62,11 +61,11 @@ if modalita == "🚀 Genera Nuova Verifica":
                     except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
                 if risposta_ver: st.session_state["testo_verifica"] = risposta_ver; st.success("Verifica generata!")
 
-    # RIGHE AGGIORNATE PER GENERAZIONE COMPATIBILE WORD (.DOC)
+    # ESPORTAZIONE UNIVERSALE IN COMPATIBILITÀ BROWSER (.HTML)
     if "testo_verifica" in st.session_state:
-        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.doc"
-        doc_bytes = correttore.esporta_in_doc_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
-        st.download_button(label="📥 Scarica file Word Verifica", data=doc_bytes, file_name=fn, mime="application/msword")
+        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.html"
+        html_bytes = correttore.esporta_in_html_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
+        st.download_button(label="📥 Scarica file Verifica", data=html_bytes, file_name=fn, mime="text/html")
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)

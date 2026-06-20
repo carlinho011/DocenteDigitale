@@ -112,9 +112,7 @@ elif modalita == "🔍 Scansiona e Correggi":
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
-                # NUOVA LOGICA LINEARE IN SENZA INDENTATION ERROR
-                modelli_da_provare = ['gemini-2.5-pro', 'gemini-2.5-flash']
+                # LOGICA SEQUENZIALE LINEARE: PREVIENE GLI INDENTATION ERROR
                 risposta_ricevuta = None
-                
-                for mod in modelli_da_provare:
-                    try:
+                try:
+                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})

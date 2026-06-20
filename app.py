@@ -1,6 +1,7 @@
 import streamlit as st
 import os, json
 
+# 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -20,6 +21,7 @@ except Exception as e: st.error(f"Errore SDK: {e}"); st.stop()
 UTENTI = json.loads(st.secrets["UTENTI_ABILITATI"]) if "UTENTI_ABILITATI" in st.secrets else {"admin@educorrect.it": "AdminPass2026"}
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
 if "utente_connesso" not in st.session_state: st.session_state["utente_connesso"] = ""
+if "registro_voti" not in st.session_state: st.session_state["registro_voti"] = []
 
 if not st.session_state["autenticato"]:
     st.title("🔒 Area Riservata Docenti - EduCorrect")
@@ -34,12 +36,21 @@ st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
 modalita = st.sidebar.radio("Scegli l'operazione:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 
 st.sidebar.markdown("---")
+st.sidebar.subheader("📊 Registro Voti Sessione")
+if st.session_state["registro_voti"]:
+    for item in st.session_state["registro_voti"]:
+        st.sidebar.info(f"📋 {item['studente']} - {item['argomento']} -> **Voto: {item['voto']}**")
+    if st.sidebar.button("🗑️ Svuota Registro"): st.session_state["registro_voti"] = []; st.rerun()
+else: st.sidebar.write("*Nessun voto registrato.*")
+
+st.sidebar.markdown("---")
 if st.sidebar.button("Disconnetti / Esci"):
     st.session_state["autenticato"] = False
     if "testo_verifica" in st.session_state: del st.session_state["testo_verifica"]
     if "analisi_correzione" in st.session_state: del st.session_state["analisi_correzione"]
     st.rerun()
 
+# --- SEZIONE 1: GENERATORE DI VERIFICHE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe")
     col1, col2, col3 = st.columns(3)
@@ -56,7 +67,7 @@ if modalita == "🚀 Genera Nuova Verifica":
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                    st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata con linea Pro!")
+                    st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata!")
                 except Exception as e:
                     if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
                         st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
@@ -75,21 +86,26 @@ if modalita == "🚀 Genera Nuova Verifica":
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
+# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
+    col_stud, col_arg = st.columns(2)
+    with col_stud: nome_alunno = st.text_input("Nome Alunno/a:", placeholder="Es. Mario Rossi")
+    with col_arg: arg_compito = st.text_input("Materia o Argomento:", placeholder="Es. Matematica")
     col_in, col_cr = st.columns(2)
     with col_in:
         foto = st.camera_input("📸 OPZIONE A:")
         file_c = st.file_uploader("📂 OPZIONE B:", type=["png", "jpg", "jpeg", "pdf"])
-        testo_m = st.text_area("✍️ OPZIONE C:", height=100, placeholder="Risposte studente...")
+        testo_m = st.text_area("✍️ OPZIONE C:", height=100)
     with col_cr: griglia = st.text_area("🔑 Criteri di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
 
     if st.button("🔎 Avvia Correzione Automatica"):
         if not foto and not file_c and not testo_m: st.error("Inserisci un compito!")
+        elif not nome_alunno or not arg_compito: st.error("Compila nome e argomento!")
         else:
             with st.spinner("Correzione in corso..."):
                 sys_c = "Sei un docente superiore italiano. Analizza il compito confrontandolo con i criteri. Restituisci l'analisi in italiano. MATEMATICA: Non usare delimitatori LaTeX, esprimi i calcoli e i simboli matematici con caratteri Unicode/HTML leggibili (es. x², √, ±, ≠, ÷). Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
-                contenuto_input = [f"Criteri di riferimento:\n{griglia}\n\nCompito dello studente:"]
+                contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
                 if file_c:
@@ -99,16 +115,3 @@ elif modalita == "🔍 Scansiona e Correggi":
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                     st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Pro!")
-                except Exception as e:
-                    if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
-                        st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
-                        try:
-                            risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                            st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Flash!")
-                        except Exception as final_err: st.error(f"❌ Tutti i server sono saturi: {final_err}")
-                    else: st.error(f"⚠️ Errore durante la chiamata: {e}")
-
-    # PARSER DI VISUALIZZAZIONE CORRETTO E SICURO AL 100%
-    if "analisi_correzione" in st.session_state:
-        cx = st.session_state["analisi_correzione"]
-        if "[VALUTAZIONE_BOX]" in cx:

@@ -140,8 +140,8 @@ if risposta_ricevuta:
     if "analisi_correzione" in st.session_state:
         cx = st.session_state["analisi_correzione"]
         fn_corr = f"correzione_{nome_alunno.lower().replace(' ', '_')}.pdf"
-        pdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno:
-        {nome_alunno}", arg_compito.capitalize(), cx.replace("[VALUTAZIONE_BOX]", ""))
+        pdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno:{nome_alunno}",
+        arg_compito.capitalize(), cx.replace("[VALUTAZIONE_BOX]", ""))
         st.download_button(label="📥 Scarica file PDF Correzione", data=pdf_corr_bytes, 
                            file_name=fn_corr, mime="application/pdf")tag_trovato = None
         for t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX",

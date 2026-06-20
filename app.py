@@ -2,6 +2,7 @@ import streamlit as st
 import os, json
 from fpdf import FPDF
 
+# 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -10,6 +11,7 @@ st.markdown("""<style>
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
+# FIX DEFINITIVO CON WRAP_MODE="CHAR" PER EVITARE SCHERMATE DI ERRORE
 def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
     pdf = FPDF(); pdf.add_page(); pdf.set_font("Helvetica", size=11)
     pdf.cell(0, 8, txt="Istituto Superiore - EduCorrect", ln=True, align='L')
@@ -17,25 +19,23 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
     pdf.line(10, 28, 200, 28); pdf.ln(10)
     pdf.set_font("Helvetica", 'B', size=15); pdf.cell(0, 10, txt=titolo, ln=True, align='C'); pdf.ln(5)
     pdf.set_font("Helvetica", size=11)
+    
     for linea in testo_principale.split('\n'):
         linea = linea.strip()
         if not linea: pdf.ln(4); continue
+        
+        # Pulisce pattern ripetuti che confondono il calcolo dei margini
         if "---" in linea: linea = linea.replace("---", "- ")
         if "___" in linea: linea = linea.replace("___", "_ ")
+        
         if "[SOLUZIONI]" in linea or "CHIAVE DI CORREZIONE" in linea:
             pdf.add_page(); pdf.set_font("Helvetica", 'B', size=13)
             pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
             continue
-        parole = linea.split(' ')
-        linea_riparata = []
-        for p in parole:
-            if len(p) > 50:
-                chunks = [p[i:i+50] for i in range(0, len(p), 50)]
-                linea_riparata.append(" ".join(chunks))
-            else: linea_riparata.append(p)
-        linea = " ".join(linea_riparata)
-        try: pdf.multi_cell(0, 6, txt=linea)
-        except Exception: pdf.multi_cell(0, 6, txt=linea[:60] + "...")
+            
+        # Il parametro wrap_mode="CHAR" spezza le formule matematiche lunghe carattere per carattere se non ci sono spazi
+        pdf.multi_cell(0, 6, txt=linea, wrap_mode="CHAR")
+        
     return pdf.output()
 
 if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()

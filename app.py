@@ -1,5 +1,6 @@
 import streamlit as st
 import os, json
+from fpdf import FPDF
 
 # 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -9,6 +10,25 @@ st.markdown("""<style>
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
+
+def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
+    pdf = FPDF(); pdf.add_page(); pdf.set_font("Helvetica", size=11)
+    pdf.cell(0, 8, txt="Istituto Superiore - EduCorrect", ln=True, align='L')
+    pdf.cell(0, 8, txt=f"Oggetto: {intestazione}", ln=True, align='L')
+    pdf.line(10, 28, 200, 28); pdf.ln(10)
+    pdf.set_font("Helvetica", 'B', size=15); pdf.cell(0, 10, txt=titolo, ln=True, align='C'); pdf.ln(5)
+    pdf.set_font("Helvetica", size=11)
+    for linea in testo_principale.split('\n'):
+        linea = linea.strip()
+        if not linea: pdf.ln(4); continue
+        if "---" in linea: linea = linea.replace("---", "- ")
+        if "___" in linea: linea = linea.replace("___", "_ ")
+        if "[SOLUZIONI]" in linea or "CHIAVE DI CORREZIONE" in linea:
+            pdf.add_page(); pdf.set_font("Helvetica", 'B', size=13)
+            pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
+            continue
+        pdf.multi_cell(0, 6, txt=linea, split_only_on_space=False)
+    return pdf.output()
 
 if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()
 try:
@@ -75,12 +95,12 @@ if modalita == "🚀 Genera Nuova Verifica":
                     else: st.error(f"⚠️ Errore: {e}")
 
     if "testo_verifica" in st.session_state:
-        tg = st.session_state['testo_verifica']
+        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
+        pdf_bytes = esporta_in_pdf_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
+        st.download_button(label="📥 Scarica file PDF Verifica", data=pdf_bytes, file_name=fn, mime="application/pdf")
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        
-        blocco_verifica_iframe = f"""<div style="margin-bottom:15px;"><button onclick="window.print()" style="background-color:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa PDF Verifica</button></div><div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">{i_html}{c_html}</div><style>@media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }} }}</style>"""
-        st.components.v1.html(blocco_verifica_iframe, height=1000, scrolling=True)
+        st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
@@ -104,20 +124,9 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
-                
-                # REFUZO AGGIORNATO DA 'contenido_input' A 'contenuto_input'
                 if file_c:
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
                     contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
                 
+                # IL TUO FRAMMENTO RIPARATO CON IL 'try:' INIZIALE MANCANTE E INDENTATO ALLINEATO
                 risposta_ricevuta = None
-                try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    risposta_ricevuta = risp.text
-                except Exception as err_pro:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                        risposta_ricevuta = risp.text
-                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
-                

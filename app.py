@@ -1,7 +1,6 @@
 import streamlit as st
 import os, json
 
-# 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
 st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
@@ -11,15 +10,13 @@ st.markdown("""<style>
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
-if "GEMINI_KEY" not in st.secrets:
-    st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets di Streamlit."); st.stop()
+if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()
 
 try:
     from google import genai
     from google.genai import types
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-except Exception as e:
-    st.error(f"Errore SDK Google: {e}"); st.stop()
+except Exception as e: st.error(f"Errore SDK: {e}"); st.stop()
 
 UTENTI = json.loads(st.secrets["UTENTI_ABILITATI"]) if "UTENTI_ABILITATI" in st.secrets else {"admin@educorrect.it": "AdminPass2026"}
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
@@ -27,11 +24,9 @@ if "utente_connesso" not in st.session_state: st.session_state["utente_connesso"
 
 if not st.session_state["autenticato"]:
     st.title("🔒 Area Riservata Docenti - EduCorrect")
-    em = st.text_input("Email:")
-    pw = st.text_input("Password:", type="password")
+    em, pw = st.text_input("Email:"), st.text_input("Password:", type="password")
     if st.button("Accedi"):
-        if em in UTENTI and pw == UTENTI[em]:
-            st.session_state["autenticato"], st.session_state["utente_connesso"] = True, em; st.rerun()
+        if em in UTENTI and pw == UTENTI[em]: st.session_state["autenticato"], st.session_state["utente_connesso"] = True, em; st.rerun()
         else: st.error("❌ Credenziali errate.")
     st.stop()
 
@@ -46,7 +41,6 @@ if st.sidebar.button("Disconnetti / Esci"):
     if "analisi_correzione" in st.session_state: del st.session_state["analisi_correzione"]
     st.rerun()
 
-# --- SEZIONE 1: GENERATORE DI VERIFICHE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.header("Generatore di Compiti in Classe")
     col1, col2, col3 = st.columns(3)
@@ -60,67 +54,64 @@ if modalita == "🚀 Genera Nuova Verifica":
         else:
             with st.spinner("Generazione con Gemini in corso..."):
                 sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di scrivere le chiavi di correzione."
-                user_p = "Crea una verifica superiore di livello " + diff + " su " + argomento + ". Tipo: " + stile + ". Numero quesiti: " + str(num) + "."
-                
+                user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                     st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata con linea Pro!")
                 except Exception as e:
-                    if "429" in str(e) or "quota" in str(e).lower() or "exhausted" in str(e).lower():
-                        st.warning("⚠️ Linea principale (Pro) satura. Switch automatico su Gemini Flash...")
+                    if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
+                        st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
                         try:
                             risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                            st.session_state["testo_verifica"] = risp.text; st.success("Generata con successo su linea Flash di riserva!")
-                        except Exception as final_err: st.error("❌ Tutti i server sono saturi: " + str(final_err))
-                    else: st.error("⚠️ Errore generico: " + str(e))
+                            st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
+                        except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
+                    else: st.error(f"⚠️ Errore generico: {e}")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
-        st.write("### 📄 Esporta Documento")
         fn = "verifica_" + diff + "_" + argomento.lower().replace(' ', '_') + ".pdf"
-        btn_js = "<div style='margin-bottom:20px;'><button onclick='scaricaFilePDF()' style='background-color:#2e7d32;color:white;padding:14px 28px;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.15);'>📥 Scarica Verifica in PDF</button></div><script src='https://cloudflare.com'></script><script>function scaricaFilePDF() { var target = window.parent.document.getElementById('blocco-foglio-word-target'); if (!target) { alert('Attendi il caricamento.'); return; } html2pdf().set({ margin:12, filename:'" + fn + "', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(target).save(); }</script>"
+        btn_js = "<div style='margin-bottom:20px;'><button onclick='scaricaFilePDF()' style='background-color:#2e7d32;color:white;padding:14px 28px;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.15);'>📥 Scarica PDF</button></div><script src='https://cloudflare.com'></script><script>function scaricaFilePDF() { var target = window.parent.document.getElementById('blocco-foglio-word-target'); if (!target) { alert('Attendi.'); return; } html2pdf().set({ margin:12, filename:'" + fn + "', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(target).save(); }</script>"
         st.components.v1.html(btn_js, height=75)
-        c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE (DOCENTE)</h3><br>") + "</div>"
-        i_html = "<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiore</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _________________________________</td><td style='text-align:right;'>Classe: ________ Sez. ____</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta (" + diff.capitalize() + ")</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: " + argomento.capitalize() + "</td></tr></table>"
-        st.markdown("<div id='blocco-foglio-word-target' class='foglio-word'>" + i_html + c_html + "</div>", unsafe_allow_html=True)
+        c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
+        i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
+        st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
-# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
-    st.write("Inserisci l'elaborato tramite scatto foto, allegato o testo.")
     col_in, col_cr = st.columns(2)
     with col_in:
-        foto = st.camera_input("📸 OPZIONE A: Scatta foto ora:")
-        file_c = st.file_uploader("📂 OPZIONE B: Carica file o foto galleria:", type=["png", "jpg", "jpeg", "pdf"])
-        testo_m = st.text_area("✍️ OPZIONE C: Incolla testo elaborato:", height=100, placeholder="Risposte dello studente...")
-    with col_cr: griglia = st.text_area("🔑 Criteri o soluzioni di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
+        foto = st.camera_input("📸 OPZIONE A:")
+        file_c = st.file_uploader("📂 OPZIONE B:", type=["png", "jpg", "jpeg", "pdf"])
+        testo_m = st.text_area("✍️ OPZIONE C:", height=100, placeholder="Risposte studente...")
+    with col_cr: griglia = st.text_area("🔑 Criteri di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
 
     if st.button("🔎 Avvia Correzione Automatica"):
-        if not foto and not file_c and not testo_m: 
-            st.error("Inserisci un compito per procedere!")
+        if not foto and not file_c and not testo_m: st.error("Inserisci un compito!")
         else:
-            with st.spinner("Lettura elaborato e correzione in corso..."):
-                sys_c = "Sei un docente superiore italiano. Analizza il compito (testo o immagine) confrontandolo con i criteri. Restituisci l'analisi in italiano. Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI (2-10) e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
-                
-                contenuto_input = []
+            with st.spinner("Correzione in corso..."):
+                sys_c = "Sei un docente superiore italiano. Analizza il compito confrontandolo con i criteri. Restituisci l'analisi in italiano. Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI (2-10) e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
+                contenuto_input = [f"Criteri:\n{griglia}\n\nCompito studente:"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(foto)
                 if file_c: contenuto_input.append(file_c)
                 
-                user_c = f"Ecco i criteri di riferimento:\n{griglia}\n\nEcco il compito dello studente da correggere."
-                contenuto_input.insert(0, user_c)
-                
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    st.session_state["analisi_correzione"] = risp.text
-                    st.success("Correzione completata con Pro!")
+                    st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Pro!")
                 except Exception as e:
-                    if "429" in str(e) or "quota" in str(e).lower() or "exhausted" in str(e).lower():
-                        st.warning("⚠️ Linea principale (Pro) satura. Switch automatico su Gemini Flash...")
+                    if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
+                        st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
                         try:
                             risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                            st.session_state["analisi_correzione"] = risp.text
-                            st.success("Correzione completata con Flash!")
-                        except Exception as final_err:
-                            st.error(f"❌ Tutti i server sono saturi: {final_err}")
-                    else:
+                            st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Flash!")
+                        except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
+                    else: st.error(f"⚠️ Errore: {e}")
+
+    if "analisi_correzione" in st.session_state:
+        cx = st.session_state["analisi_correzione"]
+        if "[VALUTAZIONE_BOX]" in cx:
+            pt = cx.split("[VALUTAZIONE_BOX]"); t_ut = pt[1] if len(pt) > 1 else cx; pg = t_ut.split("\n\n")
+            p_p = pg[0] if len(pg) > 0 else ""; c_est = "\n\n".join(pg[1:]) if len(pg) > 1 else ""
+            st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{p_p.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+            if c_est: st.markdown(f"<div class='foglio-word'><h3>🔍 Analisi di Correzione</h3><br>{c_est.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+        else: st.markdown(f"<div class='foglio-word'>{cx.replace('\n', '<br>')}</div>", unsafe_allow_html=True)

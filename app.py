@@ -118,8 +118,9 @@ elif modalita == "🔍 Scansiona e Correggi":
                     if "429" in str(e) or "quota" in str(e).lower() or "exhausted" in str(e).lower():
                         st.warning("⚠️ Linea principale (Pro) satura. Switch automatico su Gemini Flash...")
                         try:
-                            # CORRETTO: contenuto_input al posto del vecchio 'contents' errato
                             risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
                             st.session_state["analisi_correzione"] = risp.text
                             st.success("Correzione completata con Flash!")
                         except Exception as final_err:
+                            st.error(f"❌ Tutti i server sono saturi: {final_err}")
+                    else:

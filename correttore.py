@@ -17,7 +17,8 @@ def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
             pdf.add_page(); pdf.set_font("Helvetica", 'B', size=13)
             pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
             continue
-        pdf.multi_cell(0, 6, txt=linea, split_only_on_space=False)
+        # Usiamo il wrapping base compatibile con tutte le versioni di FPDF
+        pdf.multi_cell(0, 6, txt=linea)
     return pdf.output()
 
 def mostra_interfaccia_correzione(client, types):
@@ -77,7 +78,7 @@ def mostra_interfaccia_correzione(client, types):
             parti = cx.split(tag_trovato)
             testo_da_dividere = parti if len(parti) > 1 else cx
             paragrafi = [p.strip() for p in testo_da_dividere.split("\n\n") if p.strip()]
-            primo_paragrafo = paragrafi if len(paragrafi) > 0 else ""
+            primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
             corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
             
             st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo.replace('\n', '<br>')}</div>", unsafe_allow_html=True)

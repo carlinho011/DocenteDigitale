@@ -7,6 +7,7 @@ st.markdown("""<style>
     .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
     .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
+    .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
@@ -66,18 +67,35 @@ if modalita == "🚀 Genera Nuova Verifica":
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                     st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata!")
                 except Exception as e:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
-                        st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
-                    except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
+                    if any(x in str(e).lower() for x in ["429", "quota", "exhausted"]):
+                        st.warning("⚠️ Linea Pro satura. Switch su Gemini Flash...")
+                        try:
+                            risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                            st.session_state["testo_verifica"] = risp.text; st.success("Generata su linea Flash!")
+                        except Exception as final_err: st.error(f"❌ Server saturi: {final_err}")
+                    else: st.error(f"⚠️ Errore: {e}")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
-        st.button("📥 Stampa / Salva in PDF (Usa Ctrl+P o clicca destro -> Stampa)", on_click=st.toast, args=("Seleziona 'Salva come PDF' nella finestra che si apre!",))
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
+        
+        # SOLUZIONE 1 COMPATIBILE CLOUD: Pulsante interno all'iframe che stampa solo il contenuto del suo blocco
+        blocco_verifica_iframe = f"""
+        <div style="margin-bottom:15px;">
+            <button onclick="window.print()" style="background-color:#2e7d32;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);">📥 Scarica / Stampa PDF Verifica</button>
+        </div>
+        <div class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">
+            {i_html}{c_html}
+        </div>
+        <style>
+            @media print {{
+                button {{ display: none !important; }}
+                body {{ background-color: #ffffff !important; padding: 0 !important; margin: 0 !important; }}
+            }}
+        </style>
+        """
+        st.components.v1.html(blocco_verifica_iframe, height=1000, scrolling=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
@@ -112,20 +130,3 @@ elif modalita == "🔍 Scansiona e Correggi":
                 except Exception as err_pro:
                     st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                        risposta_ricevuta = risp.text
-                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
-                
-                if risposta_ricevuta: 
-                    st.session_state["analisi_correzione"] = risposta_ricevuta; st.success("Correzione completata!")
-
-    # INTEGRATO ALL'INTERNO DI ELIF CON CORRETTO ALLINEAMENTO ED ESTRAZIONE SICURA INDICI
-    if "analisi_correzione" in st.session_state:
-        cx = st.session_state["analisi_correzione"]
-        if "[VALUTAZIONE_BOX]" in cx:
-            parti = cx.split("[VALUTAZIONE_BOX]")
-            testo_da_dividere = parti[1] if len(parti) > 1 else cx
-            paragrafi = testo_da_dividere.split("\n\n")
-            primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
-            corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
-            

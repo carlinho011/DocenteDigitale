@@ -1,50 +1,22 @@
 import streamlit as st
-from fpdf import FPDF
 
-def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
-    pdf = FPDF(); pdf.add_page(); pdf.set_font("Helvetica", size=11)
-    pdf.cell(0, 8, txt="Istituto Superiori - EduCorrect", ln=True, align='L')
-    pdf.cell(0, 8, txt=f"Oggetto: {intestazione}", ln=True, align='L')
-    pdf.line(10, 28, 200, 28); pdf.ln(10)
-    pdf.set_font("Helvetica", 'B', size=15); pdf.cell(0, 10, txt=titolo, ln=True, align='C'); pdf.ln(5)
-    pdf.set_font("Helvetica", size=11)
-    
-    mappa_caratteri = {
-        "“": '"', "”": '"', "‘": "'", "’": "'", "–": "-", "—": "-",
-        "²": "^2", "³": "^3", "√": "radice_di", "±": "+/-", "≠": "!=", 
-        "≤": "<=", "≥": ">=", "÷": "/", "×": "*", "½": "1/2", "¼": "1/4"
-    }
-    
-    for linea in testo_principale.split('\n'):
-        linea = linea.strip()
-        if not linea: pdf.ln(4); continue
-        
-        for carattere_speciale, sostituto in mappa_caratteri.items():
-            linea = linea.replace(carattere_speciale, sostituto)
-            
-        if "---" in linea: linea = linea.replace("---", "- ")
-        if "___" in linea: linea = linea.replace("___", "_ ")
-        
-        if "[SOLUZIONI]" in linea or "CHIAVE DI CORREZIONE" in linea:
-            pdf.add_page(); pdf.set_font("Helvetica", 'B', size=13)
-            pdf.cell(0, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L'); pdf.ln(5); pdf.set_font("Helvetica", size=11)
-            continue
-            
-        # FIX MARGINI DEFINTIVO: Spezza forzatamente le stringhe lunghe prive di spazi prima di inviarle a multi_cell
-        parole = linea.split(' ')
-        linea_riparata = []
-        for p in parole:
-            if len(p) > 40:
-                chunks = [p[i:i+40] for i in range(0, len(p), 40)]
-                linea_riparata.append(" ".join(chunks))
-            else:
-                linea_riparata.append(p)
-        linea_finale = " ".join(linea_riparata)
-        
-        linea_sicura = linea_finale.encode('latin-1', 'replace').decode('latin-1')
-        pdf.multi_cell(0, 6, txt=linea_sicura)
-        
-    return pdf.output()
+def esporta_in_doc_nativo(titolo, intestazione, testo_principale):
+    # Genera un file HTML formattato leggibile nativamente da Microsoft Word e Google Doc
+    c_html = testo_principale.replace('\n', '<br>').replace("[SOLUZIONI]", "<br><br><hr><h2>🔑 CHIAVE DI CORREZIONE (DOCENTE)</h2><br>")
+    documento_completo = f"""
+    <html xmlns:o='urn:schemas-microsoft-com:office:office' xmlns:w='urn:schemas-microsoft-com:office:word' xmlns='http://w3.org'>
+    <head><title>{titolo}</title><style>body {{ font-family: "Times New Roman", serif; font-size: 12pt; line-height: 1.5; }}</style></head>
+    <body>
+        <h2>Istituto Superiore - EduCorrect</h2>
+        <h3>Oggetto: {intestazione}</h3>
+        <hr>
+        <h1 style='text-align:center;'>{titolo}</h1>
+        <br>
+        <p>{c_html}</p>
+    </body>
+    </html>
+    """
+    return documento_completo.encode('utf-8')
 
 def mostra_interfaccia_correzione(client, types):
     st.header("🔍 Correttore Intelligente di Compiti")
@@ -88,12 +60,13 @@ def mostra_interfaccia_correzione(client, types):
 
     if "analisi_correzione" in st.session_state:
         cx = st.session_state["analisi_correzione"]
-        fn_corr = f"corr_{nome_alunno.lower().replace(' ', '_')}.pdf"
+        fn_corr = f"corr_{nome_alunno.lower().replace(' ', '_')}.doc"
         t_pdf = f"Correzione: {nome_alunno}"
         text_p = cx.replace("[VALUTAZIONE_BOX]", "")
         
-        pdf_corr_bytes = esporta_in_pdf_nativo(t_pdf, arg_compito.capitalize(), text_p)
-        st.download_button(label="📥 Scarica file PDF Correzione", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")
+        # SISTEMA SCARICAMENTO WORD DOCUMENT (Indistruttibile)
+        doc_bytes = esporta_in_doc_nativo(t_pdf, arg_compito.capitalize(), text_p)
+        st.download_button(label="📥 Scarica file Word Correzione", data=doc_bytes, file_name=fn_corr, mime="application/msword")
         
         tag_trovato = None
         for t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX", "valutazione_box"]:

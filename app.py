@@ -78,11 +78,34 @@ if modalita == "🚀 Genera Nuova Verifica":
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
-        btn_js = "<div style='margin-bottom:20px;'><button onclick='scaricaFilePDF()' style='background-color:#2e7d32;color:white;padding:14px 28px;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.15);'>📥 Scarica PDF</button></div><script src='https://cloudflare.com'></script><script>function scaricaFilePDF() { var target = window.parent.document.getElementById('blocco-foglio-word-target'); if (!target) { alert('Attendi il caricamento.'); return; } html2pdf().set({ margin:12, filename:'" + fn + "', image:{type:'jpeg',quality:0.98}, html2canvas:{scale:2,useCORS:true}, jsPDF:{unit:'mm',format:'a4',orientation:'portrait'} }).from(target).save(); }</script>"
-        st.components.v1.html(btn_js, height=75)
+        
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        st.markdown(f"<div id='blocco-foglio-word-target' class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
+        
+        # AGGIORNAMENTO FIX: Il PDF ora racchiude sia il pulsante che l'elemento nello stesso blocco iframe isolato per aggirare i blocchi di Streamlit Cloud
+        blocco_completo_html = f"""
+        <script src="https://cloudflare.com"></script>
+        <div style="margin-bottom:20px;">
+            <button onclick="stampaFoglioInPDF()" style="background-color:#2e7d32;color:white;padding:14px 28px;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.15);">📥 Scarica PDF Verifica</button>
+        </div>
+        <div id="contenitore-esportazione-pdf" class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;border:1px solid #d3d3d3;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">
+            {i_html}{c_html}
+        </div>
+        <script>
+        function stampaFoglioInPDF() {{
+            var element = document.getElementById('contenitore-esportazione-pdf');
+            var opt = {{
+                margin: 12,
+                filename: '{fn}',
+                image: {{ type: 'jpeg', quality: 0.98 }},
+                html2canvas: {{ scale: 2, useCORS: true }},
+                jsPDF: {{ unit: 'mm', format: 'a4', orientation: 'portrait' }}
+            }};
+            html2pdf().set(opt).from(element).save();
+        }}
+        </script>
+        """
+        st.components.v1.html(blocco_completo_html, height=1200, scrolling=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
@@ -108,12 +131,3 @@ elif modalita == "🔍 Scansiona e Correggi":
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
                 if file_c:
                     m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
-                    contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
-                
-                # CHIAMATA SEQUENZIALE SICURA AL 100% SENZA ANNIDAMENTI DI SPAZI
-                risposta_ricevuta = None
-                try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    risposta_ricevuta = risp.text
-                except Exception as err_pro:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")

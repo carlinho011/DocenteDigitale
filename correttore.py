@@ -1,12 +1,35 @@
-import streamlit as st, re
+import streamlit as st
+import re
 
 def converti_markdown_in_html(testo):
+    # Converte il grassetto markdown in tag HTML
     testo_pulito = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', testo)
+    # Converte i punti elenco markdown in pallini grafici
     testo_pulito = re.sub(r'^\s*\*\s+', r'• ', testo_pulito, flags=re.MULTILINE)
     return testo_pulito
 
-def renderizza_documento_stampa(titolo, info_scuola_html, voto_html, corpo_testo_html):
-    blocco_stampa_iframe = f"<div style='margin-bottom:15px;'><button onclick='window.print()' style='background-color:#0288d1;color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>📥 Scarica / Stampa PDF della Correzione</button></div><div style='background-color:#ffffff;color:#000000;padding:40px;font-family:\"Times New Roman\",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;max-width:800px;margin:0 auto;'>{info_scuola_html}<h1 style='text-align:center;font-size:22px;margin-top:10px;margin-bottom:5px;'>{titolo}</h1>{voto_html}<br><div>{corpo_testo_html}</div></div><style>@media print {{ button {{ display: none !important; }} body {{ background-color: #ffffff !important; padding: 0 !important; }} }}</style>"
+# AGGIORNATO: Aggiunto colore_tema come quinto parametro opzionale per evitare il TypeError
+def renderizza_documento_stampa(titolo, info_scuola_html, voto_html, corpo_testo_html, colore_tema="#0288d1"):
+    blocco_stampa_iframe = f"""
+    <div style='margin-bottom:15px;'>
+        <button onclick='window.print()' style='background-color:{colore_tema};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>
+            📥 Scarica / Stampa PDF della Correzione
+        </button>
+    </div>
+    <div style='background-color:#ffffff;color:#000000;padding:40px;font-family:"Times New Roman",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;max-width:800px;margin:0 auto;'>
+        {info_scuola_html}
+        <h1 style='text-align:center;font-size:22px;margin-top:10px;margin-bottom:5px;'>{titolo}</h1>
+        {voto_html}
+        <br>
+        <div>{corpo_testo_html}</div>
+    </div>
+    <style>
+        @media print {{ 
+            button {{ display: none !important; }} 
+            body {{ background-color: #ffffff !important; padding: 0 !important; }} 
+        }}
+    </style>
+    """
     st.components.v1.html(blocco_stampa_iframe, height=1000, scrolling=True)
 
 def mostra_interfaccia_correzione(client, types):
@@ -99,6 +122,8 @@ def mostra_interfaccia_correzione(client, types):
         info_html = f"<div style='border-bottom:2px solid #000; padding-bottom:8px; font-family:Arial, sans-serif; font-size:14px;'><b>Studente:</b> {nome_alunno} <br> <b>Materia/Ambito:</b> {arg_compito}</div>"
         voto_html = f"<div style='background-color:#f8f9fa; border:1px solid #0288d1; padding:15px; margin-top:15px; text-align:center; border-radius:4px;'><span style='font-size:22px; font-weight:bold; color:#0288d1;'>Esito: Voto {voto_rilevato}</span><br><p style='margin:5px 0 0 0; font-style:italic; color:#555;'><b>Profilo Studente:</b> {profilo_studente}</p></div>"
         
+        # Convertiamo prima il markdown e applichiamo i break-line senza spezzare i tag HTML principali
         corpo_html = converti_markdown_in_html(corpo_testo).replace('\n', '<br>')
         
-        renderizza_documento_stampa("SCHEDA DI VALUTAZIONE E REVISIONE", info_html, voto_html, corpo_html)
+        # La chiamata adesso è sicura e non genererà più l'errore a riga 107
+        renderizza_documento_stampa("SCHEDA DI VALUTAZIONE E REVISIONE", info_html, voto_html, corpo_html, "#2e7d32")

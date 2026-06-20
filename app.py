@@ -134,5 +134,5 @@ elif modalita == "🔍 Scansiona e Correggi":
                         risposta_ricevuta = risp_flash.text
                     except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
 # GENERAZIONE PULSANTE BLINDATA:
-Crea sempre il PDF dell'intero testo ricevutopdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno: {nome_alunno}", arg_compito.capitalize(), cx.replace("[VALUTAZIONE_BOX]", ""))
-st.download_button(label="📥 Scarica file PDF Correzione", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")tag_trovato = Nonefor t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX", "valutazione_box"]:if t in cx: tag_trovato = t; break
+Crea sempre il PDF dell'intero testo ricevutopdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno: {nome_alunno}", arg_compito.capitalize(), cx.replace("[VALUTAZIONE_BOX]", ""))st.download_button(label="📥 Scarica file PDF Correzione", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")
+tag_trovato = Nonefor t in ["[VALUTAZIONE_BOX]", "[valutazione_box]", "VALUTAZIONE_BOX", "valutazione_box"]:if t in cx: tag_trovato = t; break

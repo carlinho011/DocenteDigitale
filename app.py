@@ -103,6 +103,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
+# --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.header("🔍 Correttore Intelligente di Compiti")
     col_stud, col_arg = st.columns(2)
@@ -115,7 +116,6 @@ elif modalita == "🔍 Scansiona e Correggi":
         testo_m = st.text_area("✍️ OPZIONE C:", height=100)
     with col_cr: griglia = st.text_area("🔑 Criteri di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
 
-    # IL TUO TESTO INSERITO ALL'INTERNO DI ELIF SENZA ALCUN TRONCAMENTO
     if st.button("🔎 Avvia Correzione Automatica"):
         if not foto and not file_c and not testo_m: st.error("Inserisci un compito!")
         elif not nome_alunno or not arg_compito: st.error("Compila nome e argomento!")
@@ -125,4 +125,44 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
-                if file_c: m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))risposta_ricevuta = Nonetry:risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})risposta_ricevuta = risp.textexcept Exception as err_pro:st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")try:risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})risposta_ricevuta = risp.textexcept Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")if risposta_ricevuta: st.session_state["analisi_correzione"] = risposta_ricevuta; st.success("Correzione completata!")if "analisi_correzione" in st.session_state:cx = st.session_state["analisi_correzione"]if "[VALUTAZIONE_BOX]" in cx:parti = cx.split("[VALUTAZIONE_BOX]")testo_da_dividere = parti[1] if len(parti) > 1 else cxparagrafi = testo_da_dividere.split("\n\n")primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""st.markdown(f"📊 Valutazione Docente{primo_paragrafo.replace('\n', '')}", unsafe_allow_html=True)if not any(v['studente'] == nome_alunno and v['argomento'] == arg_compito for v in st.session_state["registro_voti"]):st.session_state["registro_voti"].append({"studente": nome_alunno, "argomento": arg_compito, "voto": primo_paragrafo.strip()[:30]})fn_corr = f"correzione_{nome_alunno.lower().replace(' ', '_')}.pdf"pdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno: {nome_alunno}", arg_compito.capitalize(), corpo_esteso)st.download_button(label="📥 Scarica PDF Correzione (Nativo)", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")i_corr_html = f"Istituto SuperioriData: 2026Alunno/a: {nome_alunno}Oggetto: {arg_compito}"st.markdown(f"{i_corr_html}🔍 Analisi degli Errori e Soluzioni{corpo_esteso.replace('\n', '')}", unsafe_allow_html=True)else: st.markdown(f"{cx.replace('\n', '')}", unsafe_allow_html=True)
+                if file_c:
+                    m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
+                    contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
+                
+                risposta_ricevuta = None
+                try:
+                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    risposta_ricevuta = risp.text
+                except Exception as err_pro:
+                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
+                    try:
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                        risposta_ricevuta = risp.text
+                    except Exception as err_flash: st.error(f"❌ Server saturi: {err_flash}")
+                
+                if risposta_ricevuta: 
+                    st.session_state["analisi_correzione"] = risposta_ricevuta
+                    st.success("Correzione completata!")
+
+    if "analisi_correzione" in st.session_state:
+        cx = st.session_state["analisi_correzione"]
+        if "[VALUTAZIONE_BOX]" in cx:
+            parti = cx.split("[VALUTAZIONE_BOX]")
+            testo_da_dividere = parti[1] if len(parti) > 1 else cx
+            paragrafi = testo_da_dividere.split("\n\n")
+            primo_paragrafo = paragrafi[0] if len(paragrafi) > 0 else ""
+            corpo_esteso = "\n\n".join(paragrafi[1:]) if len(paragrafi) > 1 else ""
+            
+            st.markdown(f"<div class='box-valutazione'><h3>📊 Valutazione Docente</h3>{primo_paragrafo.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+            
+            if not any(v['studente'] == nome_alunno and v['argomento'] == arg_compito for v in st.session_state["registro_voti"]):
+                st.session_state["registro_voti"].append({"studente": nome_alunno, "argomento": arg_compito, "voto": primo_paragrafo.strip()[:30]})
+            
+            fn_corr = f"correzione_{nome_alunno.lower().replace(' ', '_')}.pdf"
+            pdf_corr_bytes = esporta_in_pdf_nativo(f"Scheda di Correzione - Alunno: {nome_alunno}", arg_compito.capitalize(), corpo_esteso)
+            st.download_button(label="📥 Scarica PDF Correzione (Nativo)", data=pdf_corr_bytes, file_name=fn_corr, mime="application/pdf")
+            
+            i_corr_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: 2026</td></tr><tr><td>Alunno/a: {nome_alunno}</td><td style='text-align:right;'>Oggetto: {arg_compito}</td></tr></table>"
+            st.markdown(f"<div class='foglio-word'>{i_corr_html}<h3>🔍 Analisi degli Errori e Soluzioni</h3><br>{corpo_esteso.replace('\n', '<br>')}</div>", unsafe_allow_html=True)
+        else:
+            st.markdown(f"<div class='foglio-word'>{cx.replace('\n', '<br>')}</div>", unsafe_allow_html=True)

@@ -1,5 +1,6 @@
 import streamlit as st
 import os, json
+from fpdf import FPDF
 
 # 1. IMPOSTAZIONI PAGINA E STILE GRAFICO FOGLIO WORD A4
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
@@ -10,6 +11,39 @@ st.markdown("""<style>
     .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
     .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
+
+# FUNZIONE AUSILIARIA PER GENERARE IL PDF IN COMPATIBILITÀ LATINA ESTESA
+def esporta_in_pdf_nativo(titolo, intestazione, testo_principale):
+    pdf = FPDF()
+    pdf.add_page()
+    pdf.set_font("Times", size=12)
+    
+    # Intestazione fissa
+    pdf.cell(200, 10, txt="Istituto Superiore - EduCorrect", ln=True, align='L')
+    pdf.cell(200, 10, txt=f"Oggetto: {intestazione}", ln=True, align='L')
+    pdf.line(10, 30, 200, 30)
+    pdf.ln(10)
+    
+    # Titolo del Documento
+    pdf.set_font("Times", 'B', size=16)
+    pdf.cell(200, 10, txt=titolo, ln=True, align='C')
+    pdf.ln(5)
+    
+    # Corpo del testo (pulisce caratteri non compatibili con lo standard latin-1 dei PDF semplici)
+    pdf.set_font("Times", size=12)
+    testo_pulito = testo_principale.encode('latin-1', 'replace').decode('latin-1')
+    
+    for linea in testo_pulito.split('\n'):
+        if "[SOLUZIONI]" in linea or "CHIAVE DI CORREZIONE" in linea:
+            pdf.add_page()
+            pdf.set_font("Times", 'B', size=14)
+            pdf.cell(200, 10, txt="🔑 CHIAVE DI CORREZIONE (DOCENTE)", ln=True, align='L')
+            pdf.ln(5)
+            pdf.set_font("Times", size=12)
+            continue
+        pdf.multi_cell(0, 6, txt=linea)
+    
+    return pdf.output()
 
 if "GEMINI_KEY" not in st.secrets: st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets."); st.stop()
 try:
@@ -79,33 +113,13 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg = st.session_state['testo_verifica']
         fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.pdf"
         
+        # FIX DOWNLOAD NATIVO: Compilazione binaria del file PDF eseguita sul backend Python
+        pdf_bytes = esporta_in_pdf_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
+        st.download_button(label="📥 Scarica PDF Verifica (Nativo)", data=pdf_bytes, file_name=fn, mime="application/pdf")
+        
         c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        
-        # AGGIORNAMENTO FIX: Il PDF ora racchiude sia il pulsante che l'elemento nello stesso blocco iframe isolato per aggirare i blocchi di Streamlit Cloud
-        blocco_completo_html = f"""
-        <script src="https://cloudflare.com"></script>
-        <div style="margin-bottom:20px;">
-            <button onclick="stampaFoglioInPDF()" style="background-color:#2e7d32;color:white;padding:14px 28px;border:none;border-radius:6px;cursor:pointer;font-size:16px;font-weight:bold;box-shadow:0 4px 6px rgba(0,0,0,0.15);">📥 Scarica PDF Verifica</button>
-        </div>
-        <div id="contenitore-esportazione-pdf" class="foglio-word" style="background-color:#ffffff;color:#000000;padding:40px;border:1px solid #d3d3d3;font-family:'Times New Roman',serif;line-height:1.6;font-size:16px;">
-            {i_html}{c_html}
-        </div>
-        <script>
-        function stampaFoglioInPDF() {{
-            var element = document.getElementById('contenitore-esportazione-pdf');
-            var opt = {{
-                margin: 12,
-                filename: '{fn}',
-                image: {{ type: 'jpeg', quality: 0.98 }},
-                html2canvas: {{ scale: 2, useCORS: true }},
-                jsPDF: {{ unit: 'mm', format: 'a4', orientation: 'portrait' }}
-            }};
-            html2pdf().set(opt).from(element).save();
-        }}
-        </script>
-        """
-        st.components.v1.html(blocco_completo_html, height=1200, scrolling=True)
+        st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
 
 # --- SEZIONE 2: SCANSIONA E CORREGGI ---
 elif modalita == "🔍 Scansiona e Correggi":
@@ -129,5 +143,3 @@ elif modalita == "🔍 Scansiona e Correggi":
                 contenuto_input = [f"Criteri:\n{griglia}\n\nCompito:\nAlunno: {nome_alunno}\nOggetto: {arg_compito}"]
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(types.Part.from_bytes(data=foto.getvalue(), mime_type="image/jpeg"))
-                if file_c:
-                    m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"

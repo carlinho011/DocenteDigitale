@@ -139,7 +139,6 @@ if modalita == "🚀 Genera Nuova Verifica":
                 )
                 prompt_utente = f"Crea una verifica superiore di livello '{difficolta}' su '{argomento}'. Tipo domande: {stile_domande}. Numero quesiti: {numero_domande}."
                 
-                # TENTATIVO 1: Usiamo il modello standard richiesto
                 try:
                     risposta = client.models.generate_content(
                         model='gemini-2.5-flash',
@@ -149,7 +148,6 @@ if modalita == "🚀 Genera Nuova Verifica":
                     st.session_state["testo_verifica"] = risposta.text
                     st.success("Verifica generata!")
                 except Exception as e:
-                    # TENTATIVO 2 (FALLBACK): Se la quota del 2.5 è esaurita (Errore 429), passiamo gratis al modello 1.5
                     if "429" in str(e) or "quota" in str(e).lower():
                         st.warning("⚠️ Quota giornaliera Gemini 2.5 esaurita. Switch automatico su linea secondaria di backup...")
                         try:
@@ -157,11 +155,11 @@ if modalita == "🚀 Genera Nuova Verifica":
                                 model='gemini-1.5-pro',
                                 contents=prompt_utente,
                                 config={'system_instruction': prompt_sistema, 'temperature': 0.6}
-                    )
+                            )
                             st.session_state["testo_verifica"] = risposta.text
                             st.success("Verifica generata con successo sulla linea di backup!")
                         except Exception as backup_err:
-                            st.error(f"❌ Anche la linea di backup è satura al momento. Riprova tra poco: {backup_err}")
+                            st.error(f"❌ Anche la linea di backup è satura al momento: {backup_err}")
                     else:
                         st.error(f"⚠️ Errore di generazione: {e}")
 
@@ -172,7 +170,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         slug_argomento = argomento.lower().replace(' ', '_')
         nome_file_pdf = f"verifica_{difficolta}_{slug_argomento}.pdf"
 
-        # IL TASTO PDF DIRETTO FUNZIONANTE (Nessuna tastiera, estrazione tramite html2pdf)
+        # SCRIPT JAVASCRIPT PER IL TASTO PDF DIRETTO ( html2pdf )
         script_pdf_pulsante = f"""
             <div style="margin-bottom: 20px;">
                 <button onclick="scaricaFilePDF()" style="

@@ -61,14 +61,13 @@ if modalita == "🚀 Genera Nuova Verifica":
                     except Exception as e_ver: st.error(f"❌ Errore server: {e_ver}")
                 if risposta_ver: st.session_state["testo_verifica"] = risposta_ver; st.success("Verifica generata!")
 
-    # ESPORTAZIONE UNIVERSALE IN COMPATIBILITÀ BROWSER (.HTML)
     if "testo_verifica" in st.session_state:
-        tg = st.session_state['testo_verifica']; fn = f"verifica_{diff}_{argomento.lower().replace(' ', '_')}.html"
-        html_bytes = correttore.esporta_in_html_nativo(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), tg)
-        st.download_button(label="📥 Scarica file Verifica", data=html_bytes, file_name=fn, mime="text/html")
-        c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div class='salto-pagina'><h3 style='color:#000000;border-bottom:2px solid #000000;padding-bottom:5px;'>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
+        tg = st.session_state['testo_verifica']
+        c_html = tg.replace('\n', '<br>').replace("[SOLUZIONI]", "<div style='page-break-before:always; border-top:2px dashed #000; padding-top:20px;'><h3>🔑 CHIAVE DI CORREZIONE</h3><br>") + "</div>"
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
-        st.markdown(f"<div class='foglio-word'>{i_html}{c_html}</div>", unsafe_allow_html=True)
+        
+        # Generatore Componente PDF per la Verifica
+        correttore.renderizza_documento_stampa(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), i_html, c_html, "#2e7d32")
 
 elif modalita == "🔍 Scansiona e Correggi":
     correttore.mostra_interfaccia_correzione(client, types)

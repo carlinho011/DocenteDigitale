@@ -8,7 +8,7 @@ st.markdown("""<style>
     .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
     .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
     .salto-pagina { page-break-before: always !important; break-before: page !important; margin-top: 50px !important; border-top: 2px dashed #000000 !important; padding-top: 20px !important; }
-    .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; }
+    .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
 </style>""", unsafe_allow_html=True)
 
 if "GEMINI_KEY" not in st.secrets:
@@ -62,7 +62,6 @@ if modalita == "🚀 Genera Nuova Verifica":
                 sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. Inserisci obbligatoriamente il tag [SOLUZIONI] subito prima di scrivere le chiavi di correzione."
                 user_p = "Crea una verifica superiore di livello " + diff + " su " + argomento + ". Tipo: " + stile + ". Numero quesiti: " + str(num) + "."
                 
-                # CORREZIONE: Tenta prima con Pro, se fallisce passa a Flash
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
                     st.session_state["testo_verifica"] = risp.text; st.success("Verifica generata con linea Pro!")
@@ -97,27 +96,31 @@ elif modalita == "🔍 Scansiona e Correggi":
     with col_cr: griglia = st.text_area("🔑 Criteri o soluzioni di riferimento:", value=st.session_state.get("testo_verifica", ""), height=260)
 
     if st.button("🔎 Avvia Correzione Automatica"):
-        if not foto and not file_c and not testo_m: st.error("Inserisci un compito per procedere!")
+        if not foto and not file_c and not testo_m: 
+            st.error("Inserisci un compito per procedere!")
         else:
             with st.spinner("Lettura elaborato e correzione in corso..."):
                 sys_c = "Sei un docente superiore italiano. Analizza il compito (testo o immagine) confrontandolo con i criteri. Restituisci l'analisi in italiano. Inserisci all'inizio il tag [VALUTAZIONE_BOX] seguito da: VOTO IN DECIMI (2-10) e NOTA MOTIVAZIONALE breve. Subito dopo inserisci il corpo dettagliato della correzione."
                 
-                # Prepariamo il contenuto (supporta testo o file multimediali)
                 contenuto_input = []
                 if testo_m: contenuto_input.append(testo_m)
                 if foto: contenuto_input.append(foto)
-                if file_c: contenuto_input.append(file_c)
+                if file_c: contenido_input.append(file_c)
                 
                 user_c = f"Ecco i criteri di riferimento:\n{griglia}\n\nEcco il compito dello studente da correggere."
                 contenuto_input.insert(0, user_c)
                 
-                # Gestione chiamate con switch di sicurezza anche per la correzione
                 try:
                     risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                    st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Pro!")
+                    st.session_state["analisi_correzione"] = risp.text
+                    st.success("Correzione completata con Pro!")
                 except Exception as e:
                     if "429" in str(e) or "quota" in str(e).lower() or "exhausted" in str(e).lower():
                         st.warning("⚠️ Linea principale (Pro) satura. Switch automatico su Gemini Flash...")
                         try:
                             risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                            st.session_state["analisi_correzione"] = risp.text; st.success("Correzione completata con Flash!")
+                            st.session_state["analisi_correzione"] = risp.text
+                            st.success("Correzione completata con Flash!")
+                        except Exception as final_err:
+                            st.error(f"❌ Tutti i server sono saturi: {final_err}")
+                    else:

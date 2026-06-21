@@ -1,29 +1,31 @@
 /* Caricamento Font Inter di Google */
 @import url('https://googleapis.com');
 
-/* ✨ ANIMAZIONE FLUIDA PER LO SFONDO DINAMICO */
-@keyframes gradienteDinamico {
+/* ✨ ANIMAZIONE RIGIDA E LENTA PER LO SFONDO SCURO */
+@keyframes gradienteScuro {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* 🌌 SFONDO INTEGRATO SULLA PIATTAFORMA STREAMLIT */
+/* 🌌 SFONDO TOTAL DARK TECH - ELEGANTE E PROFONDO */
 html, body, [data-testid="stAppViewContainer"], .stApp {
-    background: linear-gradient(-45deg, #070a12, #14113c, #0a0f1d, #01030a) !important;
+    /* Gradiente scuro profondo (Nero, Blu Notte e Grigio Antracite) */
+    background: linear-gradient(-45deg, #020617, #0f172a, #0b0f19, #020617) !important;
     background-size: 400% 400% !important;
-    animation: gradienteDinamico 16s ease infinite !important;
+    animation: gradienteScuro 20s ease infinite !important;
     
+    /* Griglia geometrica e punti di luce indaco molto scuri e discreti */
     background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-        radial-gradient(rgba(99, 102, 241, 0.18) 1.2px, transparent 1.2px) !important;
+        linear-gradient(rgba(255, 255, 255, 0.008) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.008) 1px, transparent 1px),
+        radial-gradient(rgba(99, 102, 241, 0.12) 1.2px, transparent 1.2px) !important;
     background-size: 45px 45px, 45px 45px, 22px 22px !important;
     background-position: 0 0, 0 0, 11px 11px !important;
     background-attachment: fixed !important;
 }
 
-/* ❌ ELIMINAZIONE DELLA STRISCIA SUPERIORE BIANCA NATIVA */
+/* ❌ ELIMINAZIONE COMPLETA DELLA STRISCIA SUPERIORE BIANCA NATIVA */
 header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     display: none !important;
     visibility: hidden !important;
@@ -33,9 +35,9 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     padding-top: 2rem !important;
 }
 
-/* 📝 COLORI DEI TITOLI E DELLA PLANCIA PRINCIPALE */
-.main h1, .main h2, .main h3, .main p, .main span {
-    color: #f8fafc !important;
+/* 📝 COLORI DEI TITOLI E DELLA PLANCIA (BIANCO LATTE AD ALTA LEGGIBILITÀ) */
+.main h1, .main h2, .main h3, .main p, .main span, .main div {
+    color: #f8fafc;
 }
 
 /* Etichette staccate sopra i controlli (es. "Argomento Didattico") */
@@ -48,7 +50,7 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     font-weight: 600 !important;
 }
 
-/* 📥 CASSI DI DETTAGLIO, CAMPI DI TESTO E INPUT (Sfondo Scuro Vetro, Scritta Bianca) */
+/* 📥 SCATOLE DI INPUT, CAMPI DI TESTO E TENDINE (Grigio Notte con Scritta Bianca) */
 div[data-baseweb="input"] input, 
 div[data-baseweb="select"] div, 
 .stTextArea textarea,
@@ -56,41 +58,42 @@ input,
 textarea {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
+    background-color: #0f172a !important;
 }
 div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
-    background-color: #1e293b !important;
-    border: 1px solid #475569 !important;
+    background-color: #0f172a !important;
+    border: 1px solid #334155 !important;
     border-radius: 6px !important;
 }
-/* Tendine aperte */
+/* Testo interno alle tendine aperte */
 div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
-    background-color: #1e293b !important;
+    background-color: #0f172a !important;
     color: #ffffff !important;
 }
 
-/* Sidebar stile vetro satinato scuro (Glassmorphism) */
+/* Sidebar stile vetro satinato scuro e minimale (Glassmorphism) */
 [data-testid="stSidebar"] {
-    background-color: rgba(6, 9, 20, 0.8) !important;
-    backdrop-filter: blur(20px) !important;
-    -webkit-backdrop-filter: blur(20px) !important;
-    border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
+    background-color: rgba(2, 6, 23, 0.85) !important;
+    backdrop-filter: blur(25px) !important;
+    -webkit-backdrop-filter: blur(25px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.03) !important;
 }
 [data-testid="stSidebar"] * {
     color: #f8fafc !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE PREMIUM (Isolato in Bianco Carta con Scritta Nera) */
+/* 📝 FOGLIO WORD MINISTERIALE (Isolato in Bianco Carta con Scritta Nera per la Stampa) */
 .foglio-word { 
     background-color: #ffffff !important; 
     padding: 55px 70px !important; 
     margin: 25px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 30px 70px rgba(0, 0, 0, 0.7), 0px 0px 50px rgba(99, 102, 241, 0.15) !important; 
+    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.8) !important; 
     border: 1px solid rgba(255, 255, 255, 0.9) !important; 
-    border-radius: 10px !important;
+    border-radius: 8px !important;
 }
 
-/* Forza testo nero dentro il foglio Word */
+/* Forza testo nero pulito esclusivamente dentro il foglio Word */
 .foglio-word, 
 .foglio-word *, 
 .tabella-intestazione, 
@@ -118,7 +121,7 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     padding: 22px 28px !important; 
     margin: 25px 0 !important; 
     border-radius: 8px !important; 
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4) !important;
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
 }
 .box-valutazione, 
 .box-valutazione *, 
@@ -131,7 +134,7 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     text-shadow: none !important;
 }
 
-/* 🖨️ PULSANTI INTERFACCIA PREMIUM (Giallo/Oro con Scritta Scura) */
+/* 🖨️ PULSANTI DI AZIONE PREMIUM (Giallo/Oro Scuro con Scritta Scura) */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
@@ -140,19 +143,19 @@ div.stButton > button {
     background-color: #fbbf24 !important;
     border: none !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
 }
 div.stButton > button, div.stButton > button * {
-    color: #0f172a !important;
-    -webkit-text-fill-color: #0f172a !important;
+    color: #020617 !important;
+    -webkit-text-fill-color: #020617 !important;
 }
 div.stButton > button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.3) !important;
     background-color: #f59e0b !important;
 }
 
-/* Svuota i riquadri trasparenti nativi */
+/* Rende trasparenti i contenitori a griglia di Streamlit */
 [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
     background-color: transparent !important;
     background: transparent !important;

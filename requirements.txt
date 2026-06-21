@@ -2,3 +2,4 @@ google-genai
 streamlit
 fpdf2
 reportlab
+streamlit-oauth

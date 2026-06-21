@@ -24,8 +24,8 @@ def genera_pdf_verifica(argomento, difficolta, testo_corpo):
         [Paragraph(f"Verifica Scritta Valutativa ({difficolta})", stile_titolo_l), Paragraph(f"Materia/Oggetto: {argomento}", stile_titolo_r)]
     ]
     
-    # FISSO: Inserite le larghezze esplicite delle colonne per evitare il SyntaxError
-    tabella = Table(dati_tabella, colWidths=[370, 170])
+    # RISOLTO ALLA RADICE: rimosso colWidths per evitare che i filtri taglino il codice
+    tabella = Table(dati_tabella)
     tabella.setStyle(TableStyle([
         ('LINEBELOW', (0, 2), (1, 2), 1.5, colors.HexColor('#0f172a')),
         ('BOTTOMPADDING', (0, 0), (1, 2), 8),
@@ -78,7 +78,7 @@ def genera_pdf_soluzioni(argomento, testo_soluzioni):
     return buffer.getvalue()
 
 def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_html, testo_domande, testo_soluzioni):
-    """Mostra la bellissima anteprima a schermo ed espone i pulsanti per il download immediato dei PDF."""
+    """Mostra l'anteprima a schermo ed espone i pulsanti per il download dei PDF."""
     st.markdown("<br><h3 class='titolo-anteprima'>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
     st.markdown(f"""
     <div class="foglio-word">
@@ -189,5 +189,6 @@ def mostra_interfaccia_correzione(client, types):
         else:
             with st.spinner("Il docente AI sta analizzando l'immagine dell'elaborato..."):
                 sys_p = (
-                    "Sei un professor italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
+                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
                     "Trova gli errori ortografici, logici o matematici e commentali dettagliatamente. "
+                    "Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' "

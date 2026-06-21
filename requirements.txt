@@ -3,3 +3,5 @@ streamlit
 fpdf2
 reportlab
 streamlit-oauth
+pip install PyJWT
+pip install streamlit-oauth

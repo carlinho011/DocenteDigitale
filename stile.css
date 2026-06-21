@@ -1,86 +1,71 @@
-/* Sfondo generale e font della piattaforma con pattern sfizioso ed elegante */
+/* Caricamento Font Inter */
 @import url('https://googleapis.com');
 
-html, body, [data-testid="stAppViewContainer"] {
-    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
-    background-image: radial-gradient(#334155 1px, transparent 1px) !important;
-    background-size: 20px 20px !important;
-    font-family: 'Inter', sans-serif !important;
+/* ✨ ANIMAZIONE FLUIDA PER LO SFONDO DINAMICO */
+@keyframes gradienteDinamico {
+    0% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+    100% { background-position: 0% 50%; }
 }
 
-/* ❌ RIMOZIONE TOTALE DELLA STRISCIA BIANCA SUPERIORE (FORZATA) */
-[data-testid="stHeader"], 
-header, 
-.st-emotion-cache-18ni7th, 
-.st-emotion-cache-zq5w93,
-header[data-testid="stHeader"] {
-    background-color: transparent !important;
+/* 🌌 SFONDO SFIZIOSO AVANZATO CON EFFETTO PROFONDITÀ CYBER-ACADEMY */
+.stApp {
+    /* Gradiente animato a 3 colori di base */
+    background: linear-gradient(-45deg, #090d16, #1e1b4b, #0f172a, #020617) !important;
+    background-size: 400% 400% !important;
+    animation: gradienteDinamico 20s ease infinite !important;
+    
+    /* Sovrapposizione di un doppio pattern: Griglia tech + Punti di luce */
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
+        radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px) !important;
+    background-size: 40px 40px, 40px 40px, 20px 20px !important;
+    background-position: 0 0, 0 0, 10px 10px !important;
+}
+
+/* Nasconde completamente l'elemento header nativo di Streamlit */
+header, [data-testid="stHeader"] {
+    display: none !important;
     background: transparent !important;
-    backdrop-filter: none !important;
-    display: none !important; /* Nasconde del tutto l'elemento header */
+    background-color: transparent !important;
     height: 0px !important;
 }
 
-/* Rimuove lo spazio vuoto superiore (padding) che lascia intravedere la fascia */
-[data-testid="stAppViewContainer"] > section > div {
+/* Rimuove lo spazio vuoto (padding) in cima alla pagina lasciando scorrere lo sfondo scuro */
+.main .block-container {
     padding-top: 2rem !important;
 }
 
-/* Rende trasparente il contenitore dei blocchi per mostrare lo sfondo */
-[data-testid="stVerticalBlock"] {
-    background-color: transparent !important;
-}
-
-/* Sidebar elegante e minimale con effetto vetro satinato */
+/* Sidebar elegante con effetto vetro satinato (Glassmorphism) e bordo luminoso */
 [data-testid="stSidebar"] {
-    background-color: rgba(15, 23, 42, 0.75) !important;
-    backdrop-filter: blur(12px) !important;
-    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-    box-shadow: 4px 0 25 rgba(0, 0, 0, 0.3) !important;
-}
-[data-testid="stSidebar"] * {
-    color: #f8fafc !important;
-}
-[data-testid="stSidebar"] .stRadio > label {
-    color: #cbd5e1 !important;
-    font-weight: 600 !important;
+    background-color: rgba(10, 15, 30, 0.7) !important;
+    backdrop-filter: blur(16px) !important;
+    border-right: 1px solid rgba(99, 102, 241, 0.1) !important;
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
 }
 
-/* Titoli Principali adattati allo sfondo scuro */
-h1, h2, h3 {
-    color: #f8fafc !important;
-    font-family: 'Inter', sans-serif !important;
-    font-weight: 700 !important;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-
-/* Sottotitoli e testi descrittivi di Streamlit */
-.stMarkdown p {
-    color: #94a3b8 !important;
-}
-
-/* Box bianchi per input e form per contrasto perfetto (Stile Card) */
-div[data-testid="stMarkdownContainer"] + div, .stTextInput, .stSelectbox, .stSlider {
-    background-color: rgba(255, 255, 255, 0.03) !important;
-    border-radius: 8px !important;
-}
-
-/* Contenitore stile foglio Word Ministeriale Premium */
+/* Contenitore stile foglio Word Ministeriale (Perfetto contrasto 3D sul nuovo sfondo) */
 .foglio-word { 
     background-color: #ffffff !important; 
     color: #1e293b !important; 
     padding: 50px 65px !important; 
     margin: 30px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 15px 40px rgba(0, 0, 0, 0.4) !important; 
-    border: 1px solid #ffffff !important; 
-    border-radius: 6px !important;
+    box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.65), 0px 0px 40px rgba(99, 102, 241, 0.1) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.8) !important; 
+    border-radius: 8px !important;
     font-family: 'Times New Roman', Times, serif !important; 
     line-height: 1.7 !important; 
     font-size: 16px !important; 
 }
 
-/* Tabella Intestazione Compito sul foglio bianco */
+/* Forzatura colore testi dentro il foglio Word bianco */
+.foglio-word * {
+    color: #1e293b !important;
+}
+
+/* Tabella Intestazione Compito */
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
@@ -92,7 +77,6 @@ div[data-testid="stMarkdownContainer"] + div, .stTextInput, .stSelectbox, .stSli
 .tabella-intestazione td { 
     border: none !important; 
     padding: 8px 0 !important; 
-    color: #334155 !important;
 }
 
 /* Box Valutazione per la Correzione Compiti */
@@ -102,26 +86,29 @@ div[data-testid="stMarkdownContainer"] + div, .stTextInput, .stSelectbox, .stSli
     padding: 20px 25px !important; 
     margin: 20px 0 !important; 
     border-radius: 6px !important; 
-    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
     font-family: 'Inter', sans-serif !important;
-    color: #1e293b !important;
     line-height: 1.6 !important;
 }
+.box-valutazione * {
+    color: #1e293b !important;
+}
 
-/* Pulsanti personalizzati con effetto lucido */
+/* Pulsanti personalizzati con bagliore al passaggio del mouse */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 10px 20px !important;
     font-weight: 600 !important;
     letter-spacing: 0.5px !important;
-    transition: all 0.2s ease !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
 }
 
 div.stButton > button:hover {
-    transform: translateY(-1px) !important;
-    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
+    transform: translateY(-2px) !important;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
+    border-color: #6366f1 !important;
 }
 
-/* Nascondi elementi di branding superflui */
+/* Nascondi gli elementi di branding predefiniti del cloud */
 #MainMenu, footer { visibility: hidden; }

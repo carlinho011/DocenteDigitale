@@ -105,7 +105,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Separazione netta di Domande e Soluzioni tramite indici di lista
+        # 4. Separazione di Domande e Soluzioni
         html_domande = ""
         html_soluzioni = ""
         

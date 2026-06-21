@@ -101,32 +101,41 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE)
         tg_pulito = tg_pulito.strip()
         
-        # 3. Conversione Markdown Bold in HTML
+        # Salviamo la versione testuale pulita per la conversione in PDF prima di mettere i tag HTML
+        testo_puro_domande = ""
+        testo_puro_soluzioni = ""
+        
+        if "[SOLUZIONI]" in tg_pulito:
+            parti_pure = tg_pulito.split("[SOLUZIONI]")
+            testo_puro_domande = parti_pure[0].strip()
+            testo_puro_soluzioni = parti_pure[1].strip()
+        else:
+            testo_puro_domande = tg_pulito.strip()
+            testo_puro_soluzioni = "Nessuna chiave di correzione fornita."
+
+        # 3. Conversione Markdown Bold in HTML (per l'anteprima Streamlit a schermo)
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Separazione di Domande e Soluzioni
+        # 4. Separazione di Domande e Soluzioni per l'anteprima HTML
         html_domande = ""
-        html_soluzioni = ""
-        
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
             html_domande = parti[0].replace('\n', '<br>')
-            html_soluzioni = parti[1].replace('\n', '<br>')
         else:
             html_domande = tg_html.replace('\n', '<br>')
-            html_soluzioni = "Nessuna chiave di correzione fornita dal modello."
         
-        # 5. Layout tabella intestazione ministeriale
+        # 5. Layout tabella intestazione ministeriale per lo schermo
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # Renderizza l'interfaccia passando separatamente domande e soluzioni
+        # Passiamo i dati al modulo correttore per la renderizzazione e la creazione dei PDF reali
         correttore.renderizza_documento_stampa(
-            titolo=f"Verifica Scritta ({diff.capitalize()})", 
             argomento=argomento.capitalize(), 
+            diffic=diff.capitalize(),
             intestazione_html=i_html, 
             domande_html=html_domande, 
-            soluzioni_html=html_soluzioni
+            testo_domande=testo_puro_domande,
+            testo_soluzioni=testo_puro_soluzioni
         )
 
 elif modalita == "🔍 Scansiona e Correggi":

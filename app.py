@@ -92,34 +92,42 @@ if modalita == "🚀 Genera Nuova Verifica":
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         
-        # 1. Rimuove introduzioni discorsive dell'AI posizionando correttamente (?i) in cima alla stringa
-        tg_pulito = re.sub(r'(?i)^(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
+        # 1. Pulizia introduzioni dell'AI
+        tg_pulito = re.sub(r'(?i)^[^1A-Za-z]*(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
         
-        # 2. Rimuove blocco dati alunno/classe/data ripetuti con parentesi o trattini
+        # 2. Rimozione diciture personali duplicate
         tg_pulito = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto|Materia|Scuola|Corso|Docente|Professore|Tempo).*?(\[.*?\]|__+)', '', tg_pulito)
         tg_pulito = re.sub(r'(?i)^.*Verifica di.*$', '', tg_pulito, flags=re.MULTILINE)
         tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE)
-        
-        # Pulizia spazi e righe vuote in testa e coda
         tg_pulito = tg_pulito.strip()
         
-        # 3. Converte la sintassi degli asterischi Markdown in tag HTML <b> (Grassetto)
+        # 3. Conversione Markdown Bold in HTML
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Gestione del tag delle soluzioni per una separazione pulita delle pagine (corretto l'errore dell'indice della lista)
+        # 4. Separazione netta di Domande e Soluzioni
+        html_domande = ""
+        html_soluzioni = ""
+        
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
-            corpo_domande = parti[0].replace('\n', '<br>')
-            corpo_soluzioni = "<div style='page-break-before:always; border-top:2px dashed #000; padding-top:20px;'><h3>🔑 CHIAVE DI CORREZIONE</h3><br>" + parti[1].replace('\n', '<br>') + "</div>"
-            c_html = corpo_domande + corpo_soluzioni
+            html_domande = parti[0].replace('\n', '<br>')
+            html_soluzioni = parti[1].replace('\n', '<br>')
         else:
-            c_html = tg_html.replace('\n', '<br>')
+            html_domande = tg_html.replace('\n', '<br>')
+            html_soluzioni = "Nessuna chiave di correzione fornita dal modello."
         
-        # 5. Layout tabella di intestazione ministeriale unica
+        # 5. Layout tabella intestazione ministeriale
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        correttore.renderizza_documento_stampa(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), i_html, c_html, "#2e7d32")
+        # Renderizza l'interfaccia aggiornata passando separatamente domande e soluzioni
+        correttore.renderizza_documento_stampa(
+            titolo=f"Verifica Scritta ({diff.capitalize()})", 
+            argomento=argomento.capitalize(), 
+            intestazione_html=i_html, 
+            domande_html=html_domande, 
+            soluzioni_html=html_soluzioni
+        )
 
 elif modalita == "🔍 Scansiona e Correggi":
     correttore.mostra_interfaccia_correzione(client, types)

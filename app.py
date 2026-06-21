@@ -316,7 +316,7 @@ Istruzioni tassative di formattazione dell'output:
                             <h4>📋 VERBALE DI VALUTAZIONE DIRETTA</h4>
                             <p><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
                         </div>
-                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{resultado_f}</div>
+                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{risultato_f}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     

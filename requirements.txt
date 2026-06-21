@@ -1,5 +1,5 @@
-google-genai
-streamlit
 fpdf2
-reportlab
+PyJWT
 streamlit-oauth
+reportlab
+google-genai

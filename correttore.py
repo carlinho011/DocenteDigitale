@@ -1,94 +1,126 @@
 import streamlit as st
+import io
+from reportlab.lib.pagesizes import letter
+from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib import colors
 
-def renderizza_documento_stampa(titolo, argomento, intestazione_html, domande_html, soluzioni_html):
-    """Mostra l'anteprima del compito e fornisce pulsanti separati per Stampa e Download PDF."""
+def genera_pdf_verifica(argomento, difficolta, testo_corpo):
+    """Genera il file PDF nativo della verifica con intestazione ministeriale."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
+    story = []
     
-    # MOSTRA SOLO LA VERIFICA NELL'ANTEPRIMA A SCHERMO
+    styles = getSampleStyleSheet()
+    
+    # Stili personalizzati per il PDF
+    stile_normale = ParagraphStyle('NormalePDF', parent=styles['Normal'], fontName='Times-Roman', fontSize=11, leading=16)
+    stile_intestazione_l = ParagraphStyle('IntestazioneL', fontName='Helvetica-Bold', fontSize=10, leading=14)
+    stile_intestazione_r = ParagraphStyle('IntestazioneR', fontName='Helvetica-Bold', fontSize=10, leading=14, alignment=2)
+    stile_titolo_l = ParagraphStyle('TitoloL', fontName='Helvetica-Bold', fontSize=12, leading=16)
+    stile_titolo_r = ParagraphStyle('TitoloR', fontName='Helvetica-Bold', fontSize=12, leading=16, alignment=2)
+
+    # Costruzione della tabella ministeriale in ReportLab
+    dati_tabella = [
+        [Paragraph("Istituto Superiori", stile_intestazione_l), Paragraph("Data: ____/____/________", stile_intestazione_r)],
+        [Paragraph("Alunno/a: ___________________________", stile_intestazione_l), Paragraph("Classe: ____ Sez. __", stile_intestazione_r)],
+        [Paragraph(f"Verifica scritta ({difficolta})", stile_titolo_l), Paragraph(f"Oggetto: {argomento}", stile_titolo_r)]
+    ]
+    
+    tabella = Table(dati_tabella, colWidths=[300, 204])
+    tabella.setStyle(TableStyle([
+        ('LINEBELOW', (0, 2), (1, 2), 1.5, colors.black),
+        ('BOTTOMPADDING', (0, 0), (1, 2), 6),
+        ('TOPPADDING', (0, 0), (1, 2), 6),
+        ('VALIGN', (0, 0), (1, 2), 'MIDDLE'),
+    ]))
+    
+    story.append(tabella)
+    story.append(Spacer(1, 20))
+    
+    # Pulizia del testo e conversione dei newline in paragrafi
+    for linea in testo_corpo.split('\n'):
+        linea = linea.strip()
+        if linea:
+            # Sostituzione base dei grassetti markdown per ReportLab (usa <b>)
+            linea_formattata = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linea)
+            linea_formattata = re.sub(r'\*(.*?)\*', r'<b>\1</b>', linea_formattata)
+            story.append(Paragraph(linea_formattata, stile_normale))
+            story.append(Spacer(1, 6))
+        else:
+            story.append(Spacer(1, 10))
+            
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def genera_pdf_soluzioni(argomento, testo_soluzioni):
+    """Genera il file PDF nativo con la chiave di correzione senza anteprima a schermo."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
+    story = []
+    
+    styles = getSampleStyleSheet()
+    stile_normale = ParagraphStyle('SoluzioniNormale', parent=styles['Normal'], fontName='Times-Roman', fontSize=11, leading=16)
+    stile_chiave = ParagraphStyle('TitoloChiave', fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#bf1515'))
+    
+    story.append(Paragraph(f"🔑 CHIAVE DI CORREZIONE: {argomento}", stile_chiave))
+    story.append(Spacer(1, 15))
+    
+    for linea in testo_soluzioni.split('\n'):
+        linea = linea.strip()
+        if linea:
+            linea_formattata = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linea)
+            linea_formattata = re.sub(r'\*(.*?)\*', r'<b>\1</b>', linea_formattata)
+            story.append(Paragraph(linea_formattata, stile_normale))
+            story.append(Spacer(1, 6))
+        else:
+            story.append(Spacer(1, 10))
+            
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+import re
+
+def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_html, testo_domande, testo_soluzioni):
+    """Mostra l'anteprima a schermo del compito e fornisce i tasti per scaricare direttamente i PDF reali."""
+    
+    # ANTEPRIMA SOLO DOMANDE A SCHERMO
     st.subheader("📝 Anteprima del Compito (per gli Studenti)")
     st.markdown(f"""
-    <div class="foglio-word" id="sezione-domande">
+    <div class="foglio-word">
         {intestazione_html}
         <div>{domande_html}</div>
     </div>
     """, unsafe_allow_html=True)
     
     st.markdown("---")
+    st.subheader("💾 Scarica i Documenti in PDF")
     
-    # SEZIONE 1: SCARICAMENTO E STAMPA VERIFICA ALUNNI
-    st.subheader("🖨️ Opzioni Verifica Studenti")
-    col_a1, col_a2 = st.columns(2)
+    col1, col2 = st.columns(2)
     
-    with col_a1:
-        if st.button("🖨️ Apri Finestra di Stampa Compito", type="primary", use_container_width=True):
-            st.components.v1.html(f"""
-            <script>
-                var doc = window.open('', '_blank');
-                doc.document.write('<html><head><title>{titolo}</title><style>');
-                doc.document.write('.foglio-word {{ padding: 40px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}');
-                doc.document.write('.tabella-intestazione {{ width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px; }}');
-                doc.document.write('.tabella-intestazione td {{ padding: 6px 0; }}');
-                doc.document.write('</style></head><body>');
-                doc.document.write('<div class="foglio-word">{intestazione_html.replace("'", "\\\'")}{domande_html.replace("'", "\\\'")}</div>');
-                doc.document.write('</body></html>');
-                doc.document.close();
-                doc.print();
-            </script>
-            """, height=0)
-
-    with col_a2:
-        # Crea un file HTML scaricabile che esegue l'auto-stampa in PDF all'apertura
-        html_alunni_download = f"""<html><head><title>{titolo}</title><style>
-        .foglio-word {{ padding: 50px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}
-        .tabella-intestazione {{ width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px; }}
-        .tabella-intestazione td {{ padding: 6px 0; }}
-        </style></head><body onload="window.print();">
-        <div class="foglio-word">{intestazione_html}{domande_html}</div>
-        </body></html>"""
-        
+    with col1:
+        # Generazione ed esportazione del PDF del compito alunni
+        pdf_alunni = genera_pdf_verifica(argomento, diffic, testo_domande)
         st.download_button(
-            label="💾 Scarica PDF Verifica (.html)",
-            data=html_alunni_download,
-            file_name=f"Verifica_{argomento.replace(' ', '_')}.html",
-            mime="text/html",
+            label="📄 Scarica PDF Verifica Studenti",
+            data=pdf_alunni,
+            file_name=f"Verifica_{argomento.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            type="primary",
             use_container_width=True
         )
-
-    st.markdown("---")
-
-    # SEZIONE 2: SCARICAMENTO E STAMPA CHIAVE DI CORREZIONE
-    st.subheader("🔑 Opzioni Chiave di Correzione (Risposte)")
-    col_s1, col_s2 = st.columns(2)
-    
-    with col_s1:
-        if st.button("🖨️ Apri Finestra di Stampa Soluzioni", type="secondary", use_container_width=True):
-            st.components.v1.html(f"""
-            <script>
-                var doc = window.open('', '_blank');
-                doc.document.write('<html><head><title>Soluzioni - {argomento}</title><style>');
-                doc.document.write('.foglio-word {{ padding: 40px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}');
-                doc.document.write('h3 {{ color: #bf1515; font-family: Arial, sans-serif; border-bottom: 2px dashed #bf1515; padding-bottom: 10px; }}');
-                doc.document.write('</style></head><body>');
-                doc.document.write('<div class="foglio-word"><h3>🔑 CHIAVE DI CORREZIONE: {argomento.replace("'", "\\\'")}</h3><br>{soluzioni_html.replace("'", "\\\'")}</div>');
-                doc.document.write('</body></html>');
-                doc.document.close();
-                doc.print();
-            </script>
-            """, height=0)
-
-    with col_s2:
-        # File delle risposte scaricabile con comando auto-stampa incorporato
-        html_soluzioni_download = f"""<html><head><title>Soluzioni - {argomento}</title><style>
-        .foglio-word {{ padding: 50px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}
-        h3 {{ color: #bf1515; font-family: Arial, sans-serif; border-bottom: 2px dashed #bf1515; padding-bottom: 10px; }}
-        </style></head><body onload="window.print();">
-        <div class="foglio-word"><h3>🔑 CHIAVE DI CORREZIONE: {argomento}</h3><br>{soluzioni_html}</div>
-        </body></html>"""
         
+    with col2:
+        # Generazione ed esportazione del PDF delle soluzioni (Nessuna anteprima grafica a schermo)
+        pdf_soluzioni = genera_pdf_soluzioni(argomento, testo_soluzioni)
         st.download_button(
-            label="💾 Scarica PDF Soluzioni (.html)",
-            data=html_soluzioni_download,
-            file_name=f"Soluzioni_{argomento.replace(' ', '_')}.html",
-            mime="text/html",
+            label="🔑 Scarica PDF Chiave di Correzione",
+            data=pdf_soluzioni,
+            file_name=f"Soluzioni_{argomento.replace(' ', '_')}.pdf",
+            mime="application/pdf",
+            type="secondary",
             use_container_width=True
         )
 

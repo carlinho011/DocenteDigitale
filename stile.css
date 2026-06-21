@@ -1,76 +1,85 @@
-/* Caricamento Font Inter */
+/* Caricamento Font Inter di Google */
 @import url('https://googleapis.com');
 
-/* ✨ ANIMAZIONE FLUIDA PER LO SFONDO DINAMICO */
+/* ✨ ANIMAZIONE RIGIDA PER LO SFONDO DINAMICO */
 @keyframes gradienteDinamico {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* 🌌 SFONDO SFIZIOSO AVANZATO CON EFFETTO PROFONDITÀ CYBER-ACADEMY */
-.stApp {
-    /* Gradiente animato a 3 colori di base */
-    background: linear-gradient(-45deg, #090d16, #1e1b4b, #0f172a, #020617) !important;
+/* 🌌 FORCE OVERRIDE DELLO SFONDO SU TUTTI I LIVELLI DI STREAMLIT */
+html, body, [data-testid="stAppViewContainer"], .stApp, .st-emotion-cache-13ln4jf, .st-emotion-cache-bm2z3a {
+    /* Forzatura del gradiente animato a 4 colori */
+    background: linear-gradient(-45deg, #070a12, #14113c, #0a0f1d, #01030a) !important;
     background-size: 400% 400% !important;
-    animation: gradienteDinamico 20s ease infinite !important;
+    animation: gradienteDinamico 16s ease infinite !important;
     
-    /* Sovrapposizione di un doppio pattern: Griglia tech + Punti di luce */
+    /* Sovrapposizione del doppio pattern: Griglia geometrica + Punti di luce indaco */
     background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-        radial-gradient(rgba(99, 102, 241, 0.15) 1px, transparent 1px) !important;
-    background-size: 40px 40px, 40px 40px, 20px 20px !important;
-    background-position: 0 0, 0 0, 10px 10px !important;
+        linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+        radial-gradient(rgba(99, 102, 241, 0.18) 1.2px, transparent 1.2px) !important;
+    background-size: 45px 45px, 45px 45px, 22px 22px !important;
+    background-position: 0 0, 0 0, 11px 11px !important;
+    background-attachment: fixed !important;
 }
 
-/* Nasconde completamente l'elemento header nativo di Streamlit */
-header, [data-testid="stHeader"] {
+/* Rende completamente trasparenti i blocchi intermedi per evitare quadrati bianchi */
+[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+
+/* ❌ ELIMINAZIONE COMPLETA DELLA STRISCIA SUPERIORE */
+header, [data-testid="stHeader"], .st-emotion-cache-18ni7th, .st-emotion-cache-zq5w93 {
     display: none !important;
+    visibility: hidden !important;
     background: transparent !important;
     background-color: transparent !important;
     height: 0px !important;
 }
 
-/* Rimuove lo spazio vuoto (padding) in cima alla pagina lasciando scorrere lo sfondo scuro */
+/* Riposiziona il testo per recuperare lo spazio della striscia eliminata */
 .main .block-container {
-    padding-top: 2rem !important;
+    padding-top: 1.5rem !important;
 }
 
-/* Sidebar elegante con effetto vetro satinato (Glassmorphism) e bordo luminoso */
+/* Sidebar fluida stile vetro satinato scuro (Glassmorphism) */
 [data-testid="stSidebar"] {
-    background-color: rgba(10, 15, 30, 0.7) !important;
-    backdrop-filter: blur(16px) !important;
-    border-right: 1px solid rgba(99, 102, 241, 0.1) !important;
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.5) !important;
+    background-color: rgba(6, 9, 20, 0.75) !important;
+    backdrop-filter: blur(20px) !important;
+    -webkit-backdrop-filter: blur(20px) !important;
+    border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
+    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.6) !important;
 }
 
-/* Contenitore stile foglio Word Ministeriale (Perfetto contrasto 3D sul nuovo sfondo) */
+/* 📝 FOGLIO WORD MINISTERIALE (Effetto Carta Reale Sospesa) */
 .foglio-word { 
     background-color: #ffffff !important; 
     color: #1e293b !important; 
-    padding: 50px 65px !important; 
-    margin: 30px auto !important; 
+    padding: 55px 70px !important; 
+    margin: 25px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 25px 60px rgba(0, 0, 0, 0.65), 0px 0px 40px rgba(99, 102, 241, 0.1) !important; 
-    border: 1px solid rgba(255, 255, 255, 0.8) !important; 
-    border-radius: 8px !important;
+    box-shadow: 0px 30px 70px rgba(0, 0, 0, 0.7), 0px 0px 50px rgba(99, 102, 241, 0.15) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.9) !important; 
+    border-radius: 10px !important;
     font-family: 'Times New Roman', Times, serif !important; 
     line-height: 1.7 !important; 
     font-size: 16px !important; 
 }
 
-/* Forzatura colore testi dentro il foglio Word bianco */
+/* Assicura il contrasto scuro dei caratteri sul foglio bianco */
 .foglio-word * {
     color: #1e293b !important;
 }
 
-/* Tabella Intestazione Compito */
+/* Intestazione Ministeriale */
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
     border-bottom: 2px solid #0f172a !important; 
-    margin-bottom: 30px !important; 
+    margin-bottom: 35px !important; 
     font-family: 'Inter', sans-serif !important; 
     font-size: 14px !important; 
 }
@@ -79,14 +88,14 @@ header, [data-testid="stHeader"] {
     padding: 8px 0 !important; 
 }
 
-/* Box Valutazione per la Correzione Compiti */
+/* Box Valutazione per i Compiti */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
     background-color: #ffffff !important; 
-    padding: 20px 25px !important; 
-    margin: 20px 0 !important; 
-    border-radius: 6px !important; 
-    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.3) !important;
+    padding: 22px 28px !important; 
+    margin: 25px 0 !important; 
+    border-radius: 8px !important; 
+    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4) !important;
     font-family: 'Inter', sans-serif !important;
     line-height: 1.6 !important;
 }
@@ -94,21 +103,21 @@ header, [data-testid="stHeader"] {
     color: #1e293b !important;
 }
 
-/* Pulsanti personalizzati con bagliore al passaggio del mouse */
+/* Pulsanti con bagliore neon indaco dinamico */
 div.stButton > button {
     border-radius: 6px !important;
-    padding: 10px 20px !important;
+    padding: 11px 22px !important;
     font-weight: 600 !important;
     letter-spacing: 0.5px !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.3) !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
 }
 
 div.stButton > button:hover {
     transform: translateY(-2px) !important;
-    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3) !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
     border-color: #6366f1 !important;
 }
 
-/* Nascondi gli elementi di branding predefiniti del cloud */
-#MainMenu, footer { visibility: hidden; }
+/* Nasconde i link e i menu di branding standard */
+#MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; display: none !important; }

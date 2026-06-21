@@ -1,13 +1,19 @@
-import streamlit as st, os, json, re
+import streamlit as st, os, json, re, time
 import correttore
 
+# Configurazione della pagina
 st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
-st.markdown("""<style>
-    .foglio-word { background-color: #ffffff !important; color: #000000 !important; padding: 50px 60px !important; margin: 20px auto !important; max-width: 800px !important; box-shadow: 0px 4px 15px rgba(0,0,0,0.15) !important; border: 1px solid #d3d3d3 !important; font-family: 'Times New Roman', Times, serif !important; line-height: 1.6 !important; font-size: 16px !important; }
-    .tabella-intestazione { width: 100% !important; border-collapse: collapse !important; border-bottom: 2px solid #000000 !important; margin-bottom: 25px !important; font-family: Arial, sans-serif !important; font-size: 14px; }
-    .tabella-intestazione td { border: none !important; padding: 6px 0 !important; }
-    .box-valutazione { border: 2px solid #bf1515 !important; background-color: #fff8f8 !important; padding: 15px 20px !important; margin-bottom: 20px !important; border-radius: 4px !important; font-family: Arial, sans-serif !important; }
-</style>""", unsafe_allow_html=True)
+
+# --- FUNZIONE PER CARICARE IL CSS DA FILE ESTERNO ---
+def carica_css(nome_file):
+    if os.path.exists(nome_file):
+        with open(nome_file, "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    else:
+        st.warning(f"⚠️ File {nome_file} non trovato. Grafica di default applicata.")
+
+# Caricamento del file grafico esterno
+carica_css("stile.css")
 
 if "GEMINI_KEY" not in st.secrets: 
     st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets.")
@@ -26,33 +32,37 @@ if "utente_connesso" not in st.session_state: st.session_state["utente_connesso"
 
 # --- SCHERMATA LOGIN ---
 if not st.session_state["autenticato"]:
-    st.title("🔒 Area Riservata Docenti - EduCorrect")
-    em, pw = st.text_input("Email:"), st.text_input("Password:", type="password")
-    if st.button("Accedi"):
+    st.markdown("<div style='max-width: 500px; margin: 80px auto; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
+    st.title("🔒 Area Riservata Docenti")
+    st.markdown("<p style='color: #64748b; margin-bottom: 25px;'>Benvenuto su EduCorrect. Inserisci le tue credenziali per accedere.</p>", unsafe_allow_html=True)
+    em = st.text_input("Email:")
+    pw = st.text_input("Password:", type="password")
+    if st.button("Accedi al Registro", use_container_width=True):
         if em in UTENTI and pw == UTENTI[em]: 
             st.session_state["autenticato"], st.session_state["utente_connesso"] = True, em
             st.rerun()
         else: 
             st.error("❌ Credenziali errate.")
+    st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
 # --- BARRA LATERALE ---
-st.sidebar.title("🛠️ Menu EduCorrect")
-st.sidebar.write(f"👤 Utente: **{st.session_state['utente_connesso']}**")
+st.sidebar.markdown("<h2 style='text-align: center; color: #fbbf24 !important;'>📝 EduCorrect AI</h2>", unsafe_allow_html=True)
+st.sidebar.markdown(f"<p style='text-align: center; color: #94a3b8 !important; font-size: 13px;'>👤 {st.session_state['utente_connesso']}</p>", unsafe_allow_html=True)
+st.sidebar.markdown("<br>", unsafe_allow_html=True)
 
-# Funzione per pulire la sessione ai cambi di stato
 def reset_modalita():
     if "testo_verifica" in st.session_state: del st.session_state["testo_verifica"]
     if "analisi_correzione" in st.session_state: del st.session_state["analisi_correzione"]
 
 modalita = st.sidebar.radio(
-    "Scegli l'operazione:", 
+    "FUNZIONALITÀ PLANCIA:", 
     ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"],
     on_change=reset_modalita
 )
-st.sidebar.markdown("---")
+st.sidebar.markdown("<br><br><br>", unsafe_allow_html=True)
 
-if st.sidebar.button("Disconnetti / Esci"):
+if st.sidebar.button("🚪 Disconnetti ed Esci", use_container_width=True):
     st.session_state["autenticato"] = False
     reset_modalita()
     st.rerun()
@@ -60,19 +70,22 @@ if st.sidebar.button("Disconnetti / Esci"):
 
 # --- APPLICAZIONE PRINCIPALE ---
 if modalita == "🚀 Genera Nuova Verifica":
-    st.header("Generatore di Compiti in Classe")
-    col1, col2, col3 = st.columns(3)
-    with col1: argomento = st.text_input("Argomento:", placeholder="Es. Equazioni...")
-    with col2: stile = st.selectbox("Tipo:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
-    with col3: diff = st.selectbox("Difficoltà:", ["facile", "media", "difficile"])
-    num = st.slider("Numero domande:", 1, 20, 5)
+    st.title("🚀 Generatore Integrato di Verifiche")
+    st.markdown("<p style='color: #64748b; margin-top: -15px;'>Configura i parametri ministeriali per strutturare il compito in classe.</p>", unsafe_allow_html=True)
     
-    if st.button("Genera Testo Verifica"):
+    st.markdown("<div style='background-color: #ffffff; padding: 25px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 25px;'>", unsafe_allow_html=True)
+    col1, col2, col3 = st.columns(3)
+    with col1: argomento = st.text_input("Argomento Didattico:", placeholder="Es. Sigmund Freud, Equazioni di secondo grado...")
+    with col2: stile = st.selectbox("Tipologia Quesiti:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
+    with col3: diff = st.selectbox("Livello di Difficoltà:", ["facile", "media", "difficile"])
+    num = st.slider("Numero Totale di Domande:", 1, 20, 5)
+    st.markdown("</div>", unsafe_allow_html=True)
+    
+    if st.button("🪄 Elabora Struttura Verifica e Soluzioni", type="primary"):
         if not argomento: 
-            st.error("Scrivi un argomento!")
+            st.error("Inserisci un argomento didattico prima di procedere!")
         else:
-            with st.spinner("Generazione in corso..."):
-                # Istruzione di sistema ottimizzata per ordinare e strutturare le domande miste
+            with st.spinner("L'intelligenza artificiale sta elaborando e ordinando la verifica..."):
                 sys_p = (
                     "Sei un assistente didattico esperto per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. "
                     "NON includere introduzioni discorsive (es. 'Ecco una verifica...'), e non inserire intestazioni per nome, cognome, classe, data o istituto. "
@@ -84,33 +97,40 @@ if modalita == "🚀 Genera Nuova Verifica":
                 )
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti totali: {num}."
                 risposta_ver = None
-                try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.5})
-                    risposta_ver = risp.text
-                except Exception:
-                    st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.5})
-                        risposta_ver = risp.text
-                    except Exception as e_ver: 
-                        st.error(f"❌ Errore server: {e_ver}")
-                if risposta_ver: 
-                    st.session_state["testo_verifica"] = risposta_ver
-                    st.success("Verifica generata!")
+                
+                modelli_tentativi = ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']
+                
+                for idx, modello in enumerate(modelli_tentativi):
+                    successo = False
+                    for tentativo in range(3):
+                        try:
+                            risp = client.models.generate_content(model=modello, contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.5})
+                            risposta_ver = risp.text
+                            successo = True
+                            break
+                        except Exception as e:
+                            stringa_errore = str(e)
+                            if "503" in stringa_errore or "UNAVAILABLE" in stringa_errore:
+                                time.sleep(2 + tentativo * 2)
+                            else:
+                                break
+                    if successo: break
+                    elif idx < len(modelli_tentativi) - 1:
+                        st.warning(f"⚠️ Modello {modello} temporaneamente saturo. Reindirizzamento della richiesta...")
+
+                if r_text := risposta_ver: 
+                    st.session_state["testo_verifica"] = r_text
+                    st.success("Verifica e soluzioni generate con successo!")
 
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         
-        # 1. Pulizia introduzioni residue dell'AI
         tg_pulito = re.sub(r'(?i)^[^1A-Za-z]*(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
-        
-        # 2. Rimozione diciture personali duplicate
         tg_pulito = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto|Materia|Scuola|Corso|Docente|Professore|Tempo).*?(\[.*?\]|__+)', '', tg_pulito)
         tg_pulito = re.sub(r'(?i)^.*Verifica di.*$', '', tg_pulito, flags=re.MULTILINE)
         tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE)
         tg_pulito = tg_pulito.strip()
         
-        # Salviamo la versione testuale pulita per la conversione nativa in PDF
         testo_puro_domande = ""
         testo_puro_soluzioni = ""
         
@@ -122,11 +142,9 @@ if modalita == "🚀 Genera Nuova Verifica":
             testo_puro_domande = tg_pulito.strip()
             testo_puro_soluzioni = "Nessuna chiave di correzione fornita."
 
-        # 3. Conversione Markdown Bold in HTML (per lo schermo)
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Separazione di Domande e Soluzioni per l'anteprima web
         html_domande = ""
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
@@ -134,10 +152,8 @@ if modalita == "🚀 Genera Nuova Verifica":
         else:
             html_domande = tg_html.replace('\n', '<br>')
         
-        # 5. Layout tabella intestazione ministeriale per lo schermo
-        i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
+        i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;font-size:15px;'>Istituto Statale di Istruzione Superiore</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: _________________________________________</td><td style='text-align:right;'>Classe: ________ Sez. ____</td></tr><tr><td style='padding-top:15px;font-size:16px;font-weight:bold;color:#0f172a;'>Verifica Scritta Valutativa ({diff.capitalize()})</td><td style='padding-top:15px;text-align:right;font-size:16px;font-weight:bold;color:#0f172a;'>Materia/Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # Passiamo i dati puliti e ordinati al modulo correttore
         correttore.renderizza_documento_stampa(
             argomento=argomento.capitalize(), 
             diffic=diff.capitalize(),

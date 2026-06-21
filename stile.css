@@ -1,26 +1,11 @@
 /* Caricamento Font Inter di Google */
 @import url('https://googleapis.com');
 
-/* ✨ ANIMAZIONE RIGIDA E LENTA PER LO SFONDO SCURO */
+/* ✨ ANIMAZIONE FLUIDA PER LO SFONDO SCURO */
 @keyframes gradienteScuro {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
-}
-
-/* 🌌 SFONDO BLU SCURO REALE E PROFONDO CON GRIGLIA A PUNTINI */
-html, body, [data-testid="stAppViewContainer"], .stApp {
-    background: linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;
-    background-size: 400% 400% !important;
-    animation: gradienteScuro 20s ease infinite !important;
-    
-    background-image: 
-        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        radial-gradient(rgba(99, 102, 241, 0.3) 1.5px, transparent 1.5px) !important;
-    background-size: 45px 45px, 45px 45px, 22px 22px !important;
-    background-position: 0 0, 0 0, 11px 11px !important;
-    background-attachment: fixed !important;
 }
 
 /* ❌ ELIMINAZIONE DELLA STRISCIA SUPERIORE BIANCA NATIVA */
@@ -33,168 +18,171 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     padding-top: 2rem !important;
 }
 
-/* 📝 COLORI DEI TITOLI DELLA PLANCIA PRINCIPALE */
-.main h1, .main h2, .main h3, .main h4, .main p, .main span, .main label, .main label p, .stMarkdown p {
+/* ==========================================================================
+   🌌 MODALITÀ TOTAL DARK (SFONDO BLU SCURO A PUNTINI E SCHERMATA SCURA)
+   ========================================================================== */
+#tema-attivo.tema-total-dark ~ [data-testid="stAppViewContainer"], 
+#tema-attivo.tema-total-dark ~ [data-testid="stAppViewContainer"] .stApp {
+    background: linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;
+    background-size: 400% 400% !important;
+    animation: gradienteScuro 20s ease infinite !important;
+    background-image: 
+        linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
+        radial-gradient(rgba(99, 102, 241, 0.3) 1.5px, transparent 1.5px) !important;
+    background-size: 45px 45px, 45px 45px, 22px 22px !important;
+    background-position: 0 0, 0 0, 11px 11px !important;
+    background-attachment: fixed !important;
+}
+
+#tema-attivo.tema-total-dark ~ .main h1, 
+#tema-attivo.tema-total-dark ~ .main h2, 
+#tema-attivo.tema-total-dark ~ .main h3, 
+#tema-attivo.tema-total-dark ~ .main h4, 
+#tema-attivo.tema-total-dark ~ .main p, 
+#tema-attivo.tema-total-dark ~ .main span,
+#tema-attivo.tema-total-dark ~ .main label p {
     color: #f8fafc !important;
 }
 
-/* 📥 BOX CONTENITORI OPZIONI (CARD SCURE BLU SCURO VETRO) */
-.box-parametri, [data-testid="stForm"] {
+#tema-attivo.tema-total-dark ~ .main .box-parametri {
     background-color: rgba(10, 25, 47, 0.6) !important; 
-    padding: 25px; 
-    border-radius: 8px; 
     border: 1px solid rgba(99, 102, 241, 0.2); 
-    margin-bottom: 25px;
 }
 
-/* 🔒 CASSE DI INPUT E TENDINE (SFONDO NOTTE SCURO / SCRITTA BIANCA) */
-div[data-baseweb="input"] input, 
-div[data-baseweb="select"] div, 
-.stTextArea textarea,
-input,
-textarea {
+#tema-attivo.tema-total-dark ~ .main div[data-baseweb="input"] input, 
+#tema-attivo.tema-total-dark ~ .main div[data-baseweb="select"] div, 
+#tema-attivo.tema-total-dark ~ .main .stTextArea textarea {
     color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
     background-color: #010a15 !important;
 }
-div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
+
+#tema-attivo.tema-total-dark ~ .main div[data-baseweb="input"], 
+#tema-attivo.tema-total-dark ~ .main div[data-baseweb="select"], 
+#tema-attivo.tema-total-dark ~ .main .stTextArea textarea {
     background-color: #010a15 !important;
     border: 1px solid #1e293b !important;
-    border-radius: 6px !important;
-}
-div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
-    background-color: #010a15 !important;
-    color: #ffffff !important;
 }
 
-/* Sidebar stile vetro satinato scuro (Glassmorphism) */
+/* Foglio esame scuro coordinato */
+#tema-attivo.tema-total-dark ~ .main .foglio-word { 
+    background-color: rgba(14, 28, 54, 0.8) !important; 
+    border: 1px solid rgba(99, 102, 241, 0.2) !important; 
+    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.7) !important;
+}
+#tema-attivo.tema-total-dark ~ .main .foglio-word * {
+    color: #f1f5f9 !important;
+}
+#tema-attivo.tema-total-dark ~ .main .tabella-intestazione {
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
+}
+#tema-attivo.tema-total-dark ~ .main .box-valutazione { 
+    background-color: rgba(10, 25, 47, 0.85) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+#tema-attivo.tema-total-dark ~ .main .box-valutazione * {
+    color: #f8fafc !important;
+}
+
+/* ==========================================================================
+   ☀️ MODALITÀ LIGHT MODE (SFONDO GRIGIO CHIARO TRADIZIONALE)
+   ========================================================================== */
+#tema-attivo.tema-light-mode ~ [data-testid="stAppViewContainer"], 
+#tema-attivo.tema-light-mode ~ [data-testid="stAppViewContainer"] .stApp {
+    background: #f8fafc !important;
+    background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px) !important;
+    background-size: 20px 20px !important;
+    animation: none !important;
+}
+
+#tema-attivo.tema-light-mode ~ .main h1, 
+#tema-attivo.tema-light-mode ~ .main h2, 
+#tema-attivo.tema-light-mode ~ .main h3, 
+#tema-attivo.tema-light-mode ~ .main h4, 
+#tema-attivo.tema-light-mode ~ .main p, 
+#tema-attivo.tema-light-mode ~ .main span,
+#tema-attivo.tema-light-mode ~ .main label p {
+    color: #1e293b !important;
+}
+
+#tema-attivo.tema-light-mode ~ .main .box-parametri {
+    background-color: #ffffff !important; 
+    border: 1px solid #e2e8f0; 
+}
+
+#tema-attivo.tema-light-mode ~ .main div[data-baseweb="input"] input, 
+#tema-attivo.tema-light-mode ~ .main div[data-baseweb="select"] div, 
+#tema-attivo.tema-light-mode ~ .main .stTextArea textarea {
+    color: #1e293b !important;
+    background-color: #ffffff !important;
+}
+
+#tema-attivo.tema-light-mode ~ .main div[data-baseweb="input"], 
+#tema-attivo.tema-light-mode ~ .main div[data-baseweb="select"], 
+#tema-attivo.tema-light-mode ~ .main .stTextArea textarea {
+    background-color: #ffffff !important;
+    border: 1px solid #cbd5e1 !important;
+}
+
+/* Foglio esame bianco classico stampabile */
+#tema-attivo.tema-light-mode ~ .main .foglio-word { 
+    background-color: #ffffff !important; 
+    border: 1px solid #e2e8f0 !important; 
+    box-shadow: 0px 15px 45px rgba(0, 0, 0, 0.06) !important;
+}
+#tema-attivo.tema-light-mode ~ .main .foglio-word * {
+    color: #1e293b !important;
+}
+#tema-attivo.tema-light-mode ~ .main .tabella-intestazione {
+    border-bottom: 2px solid #0f172a !important;
+}
+#tema-attivo.tema-light-mode ~ .main .box-valutazione { 
+    background-color: #fef2f2 !important; 
+    border: 1px solid #fecaca;
+}
+#tema-attivo.tema-light-mode ~ .main .box-valutazione * {
+    color: #991b1b !important;
+}
+
+/* ==========================================================================
+   ⚙️ REGOLE CONDIVISE STRUTTURALI (PULSANTI, LOGIN E SIDEBAR)
+   ========================================================================== */
+.box-parametri { padding: 25px; border-radius: 8px; margin-bottom: 25px; }
+.foglio-word { padding: 55px 70px !important; margin: 25px auto !important; max-width: 850px !important; border-radius: 10px !important; }
+.tabella-intestazione { width: 100% !important; border-collapse: collapse !important; margin-bottom: 35px !important; }
+.tabella-intestazione td { border: none !important; padding: 8px 0 !important; }
+.box-valutazione { border-left: 5px solid #ef4444 !important; padding: 22px 28px !important; margin: 25px 0 !important; border-radius: 8px !important; }
+
+/* Sidebar scura bloccata (Fissa in Glassmorphism per non stancare gli occhi) */
 [data-testid="stSidebar"] {
     background-color: rgba(2, 12, 28, 0.9) !important;
     backdrop-filter: blur(25px) !important;
     -webkit-backdrop-filter: blur(25px) !important;
     border-right: 1px solid rgba(99, 102, 241, 0.1) !important;
 }
-[data-testid="stSidebar"] * {
-    color: #f8fafc !important;
-}
+[data-testid="stSidebar"] * { color: #f8fafc !important; }
 
-/* 🔒 BOX DI LOGIN COMPLETAMENTE SCURO BLU MINISTERIALE */
+/* Scatola di Login Neutra Scuro Vetro */
 .box-login {
-    max-width: 500px; 
-    margin: 80px auto; 
-    padding: 40px; 
-    background: rgba(10, 25, 47, 0.75) !important; 
-    backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(99, 102, 241, 0.25);
-    border-radius: 12px; 
-    box-shadow: 0 20px 50px rgba(0,0,0,0.6);
+    max-width: 500px; margin: 80px auto; padding: 40px; 
+    background: rgba(10, 25, 47, 0.75) !important; backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(99, 102, 241, 0.25); border-radius: 12px; box-shadow: 0 20px 50px rgba(0,0,0,0.6);
 }
-.box-login h2, .box-login p {
-    color: #f8fafc !important;
-}
-.box-login div[data-baseweb="input"], .box-login input {
-    background-color: #010a15 !important;
-    color: #ffffff !important;
-    border: 1px solid #1e293b !important;
-}
+.box-login h2, .box-login p { color: #f8fafc !important; }
+.box-login input { background-color: #010a15 !important; color: #ffffff !important; border: 1px solid #1e293b !important; }
 
-/* 📝 FOGLIO WORD TRASFORMATO IN UN ELEGANTE ARDESIA BLU SCURO */
-.foglio-word { 
-    background-color: rgba(14, 28, 54, 0.8) !important; 
-    backdrop-filter: blur(10px) !important;
-    padding: 55px 70px !important; 
-    margin: 25px auto !important; 
-    max-width: 850px !important; 
-    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.7), 0px 0px 40px rgba(99, 102, 241, 0.25) !important; 
-    border: 1px solid rgba(99, 102, 241, 0.2) !important; 
-    border-radius: 10px !important;
-}
-
-/* Colore testi della verifica bianchi/ghiaccio per massimo contrasto leggibile */
-.foglio-word, 
-.foglio-word *, 
-.tabella-intestazione, 
-.tabella-intestazione td, 
-.foglio-word div, 
-.foglio-word b, 
-.foglio-word p, 
-.foglio-word span {
-    color: #f1f5f9 !important;
-    -webkit-text-fill-color: #f1f5f9 !important;
-    font-family: 'Times New Roman', Times, serif !important;
-    text-shadow: none !important;
-}
-.tabella-intestazione { 
-    width: 100% !important; 
-    border-collapse: collapse !important; 
-    border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important; 
-    margin-bottom: 35px !important; 
-}
-
-/* 📋 BOX VALUTAZIONE AI CORREZIONE IN VERSIONE BLU SCURA CON BORDO ROSSO */
-.box-valutazione { 
-    border-left: 5px solid #ef4444 !important; 
-    background-color: rgba(10, 25, 47, 0.85) !important; 
-    padding: 22px 28px !important; 
-    margin: 25px 0 !important; 
-    border-radius: 8px !important; 
-    border: 1px solid rgba(255, 255, 255, 0.05);
-    box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
-}
-.box-valutazione, 
-.box-valutazione *, 
-.box-valutazione p, 
-.box-valutazione span, 
-.box-valutazione div {
-    color: #f8fafc !important;
-    -webkit-text-fill-color: #f8fafc !important;
-    font-family: 'Inter', sans-serif !important;
-    text-shadow: none !important;
-}
-
-/* 🖨️ PULSANTI DI AZIONE COLORATI (STACCO VIVACE DAL BLU SCURO) */
+/* Pulsanti Colorati d'Azione Vivaci (Validi per entrambi i temi) */
 div.stButton > button {
-    border-radius: 6px !important;
-    padding: 11px 22px !important;
-    font-weight: 700 !important;
-    letter-spacing: 0.5px !important;
-    border: none !important;
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5) !important;
+    border-radius: 6px !important; padding: 11px 22px !important; font-weight: 700 !important;
+    letter-spacing: 0.5px !important; border: none !important; transition: all 0.3s ease !important;
 }
+div.stButton > button[data-testid="baseButton-primary"] { background-color: #f59e0b !important; }
+div.stButton > button[data-testid="baseButton-primary"], div.stButton > button[data-testid="baseButton-primary"] * { color: #020617 !important; }
+div.stButton > button[data-testid="baseButton-primary"]:hover { transform: translateY(-2px) !important; background-color: #d97706 !important; box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4) !important; }
 
-/* 🟡 PULSANTE PRINCIPALE (PRIMARY): AMBRA / ORO VIVACE */
-div.stButton > button[data-testid="baseButton-primary"] {
-    background-color: #f59e0b !important;
-}
-div.stButton > button[data-testid="baseButton-primary"], div.stButton > button[data-testid="baseButton-primary"] * {
-    color: #020617 !important;
-    -webkit-text-fill-color: #020617 !important;
-}
-div.stButton > button[data-testid="baseButton-primary"]:hover {
-    transform: translateY(-2px) !important;
-    background-color: #d97706 !important;
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5) !important;
-}
+div.stButton > button[data-testid="baseButton-secondary"] { background-color: #4f46e5 !important; }
+div.stButton > button[data-testid="baseButton-secondary"], div.stButton > button[data-testid="baseButton-secondary"] * { color: #ffffff !important; }
+div.stButton > button[data-testid="baseButton-secondary"]:hover { transform: translateY(-2px) !important; background-color: #4338ca !important; box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important; }
 
-/* 🔵 PULSANTE SECONDARIO (SECONDARY): INDACO / BLU LUMINOSO CYBER */
-div.stButton > button[data-testid="baseButton-secondary"] {
-    background-color: #4f46e5 !important;
-    border: 1px solid rgba(255, 255, 255, 0.1) !important;
-}
-div.stButton > button[data-testid="baseButton-secondary"], div.stButton > button[data-testid="baseButton-secondary"] * {
-    color: #ffffff !important;
-    -webkit-text-fill-color: #ffffff !important;
-}
-div.stButton > button[data-testid="baseButton-secondary"]:hover {
-    transform: translateY(-2px) !important;
-    background-color: #4338ca !important;
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
-}
-
-/* Rende trasparenti i contenitori verticali nativi di Streamlit */
-[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
-    background-color: transparent !important;
-    background: transparent !important;
-}
+[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock { background-color: transparent !important; }
 #MainMenu, footer { visibility: hidden; display: none !important; }

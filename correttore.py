@@ -24,7 +24,7 @@ def genera_pdf_verifica(argomento, difficolta, testo_corpo):
         [Paragraph(f"Verifica Scritta Valutativa ({difficolta})", stile_titolo_l), Paragraph(f"Materia/Oggetto: {argomento}", stile_titolo_r)]
     ]
     
-    # Sintassi corretta con le larghezze esplicite per le colonne
+    # FISSO: Inserite le larghezze esplicite delle colonne per evitare il SyntaxError
     tabella = Table(dati_tabella, colWidths=[370, 170])
     tabella.setStyle(TableStyle([
         ('LINEBELOW', (0, 2), (1, 2), 1.5, colors.HexColor('#0f172a')),
@@ -189,5 +189,5 @@ def mostra_interfaccia_correzione(client, types):
         else:
             with st.spinner("Il docente AI sta analizzando l'immagine dell'elaborato..."):
                 sys_p = (
-                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
+                    "Sei un professor italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
                     "Trova gli errori ortografici, logici o matematici e commentali dettagliatamente. "

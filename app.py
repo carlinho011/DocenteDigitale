@@ -72,16 +72,25 @@ if modalita == "🚀 Genera Nuova Verifica":
             st.error("Scrivi un argomento!")
         else:
             with st.spinner("Generazione in corso..."):
-                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. NON includere introduzioni come 'Ecco una verifica...', e non inserire intestazioni per nome, cognome, classe, data o istituto. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML. Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
-                user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
+                # Istruzione di sistema ottimizzata per ordinare e strutturare le domande miste
+                sys_p = (
+                    "Sei un assistente didattico esperto per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. "
+                    "NON includere introduzioni discorsive (es. 'Ecco una verifica...'), e non inserire intestazioni per nome, cognome, classe, data o istituto. "
+                    "REGLA ORDINE DOMANDE MISTE: Se il tipo richiesto è 'Domande miste', ordina e raggruppa i quesiti in modo logico per tipologia. "
+                    "Ad esempio metti prima tutte le domande a Scelta Multipla, poi tutte le domande Vero/Falso, e infine le Risposte Aperte. "
+                    "Mantieni una numerazione progressiva e continua da 1 a N per tutto il foglio senza azzerare il conteggio tra le sottosezioni. "
+                    "IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche HTML. "
+                    "Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
+                )
+                user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti totali: {num}."
                 risposta_ver = None
                 try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.5})
                     risposta_ver = risp.text
                 except Exception:
                     st.warning("⚠️ Linea Pro satura. Switch automatico su Gemini Flash...")
                     try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.6})
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.5})
                         risposta_ver = risp.text
                     except Exception as e_ver: 
                         st.error(f"❌ Errore server: {e_ver}")
@@ -92,7 +101,7 @@ if modalita == "🚀 Genera Nuova Verifica":
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         
-        # 1. Pulizia introduzioni dell'AI
+        # 1. Pulizia introduzioni residue dell'AI
         tg_pulito = re.sub(r'(?i)^[^1A-Za-z]*(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
         
         # 2. Rimozione diciture personali duplicate
@@ -101,7 +110,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE)
         tg_pulito = tg_pulito.strip()
         
-        # Salviamo la versione testuale pulita per la conversione in PDF prima di mettere i tag HTML
+        # Salviamo la versione testuale pulita per la conversione nativa in PDF
         testo_puro_domande = ""
         testo_puro_soluzioni = ""
         
@@ -113,11 +122,11 @@ if modalita == "🚀 Genera Nuova Verifica":
             testo_puro_domande = tg_pulito.strip()
             testo_puro_soluzioni = "Nessuna chiave di correzione fornita."
 
-        # 3. Conversione Markdown Bold in HTML (per l'anteprima Streamlit a schermo)
+        # 3. Conversione Markdown Bold in HTML (per lo schermo)
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Separazione di Domande e Soluzioni per l'anteprima HTML
+        # 4. Separazione di Domande e Soluzioni per l'anteprima web
         html_domande = ""
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
@@ -128,7 +137,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         # 5. Layout tabella intestazione ministeriale per lo schermo
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # Passiamo i dati al modulo correttore per la renderizzazione e la creazione dei PDF reali
+        # Passiamo i dati puliti e ordinati al modulo correttore
         correttore.renderizza_documento_stampa(
             argomento=argomento.capitalize(), 
             diffic=diff.capitalize(),

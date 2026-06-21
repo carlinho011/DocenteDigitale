@@ -92,22 +92,22 @@ if modalita == "🚀 Genera Nuova Verifica":
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         
-        # 1. Rimuove introduzioni discorsive dell'AI (es. "Ecco una verifica su...")
-        tg_pulito = re.sub(r'^(?i)(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
+        # 1. Rimuove introduzioni discorsive dell'AI posizionando correttamente (?i) in cima alla stringa
+        tg_pulito = re.sub(r'(?i)^(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
         
         # 2. Rimuove blocco dati alunno/classe/data ripetuti con parentesi o trattini
         tg_pulito = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto|Materia|Scuola|Corso|Docente|Professore|Tempo).*?(\[.*?\]|__+)', '', tg_pulito)
         tg_pulito = re.sub(r'(?i)^.*Verifica di.*$', '', tg_pulito, flags=re.MULTILINE)
-        tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE) # Rimuove linee separatorie ---
+        tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE)
         
-        # Pulizia righe vuote rimaste in testa al documento
+        # Pulizia spazi e righe vuote in testa e coda
         tg_pulito = tg_pulito.strip()
         
         # 3. Converte la sintassi degli asterischi Markdown in tag HTML <b> (Grassetto)
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Gestione del tag delle soluzioni per una separazione pulita delle pagine
+        # 4. Gestione del tag delle soluzioni per una separazione pulita delle pagine (corretto l'errore dell'indice della lista)
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
             corpo_domande = parti[0].replace('\n', '<br>')

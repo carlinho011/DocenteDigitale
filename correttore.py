@@ -24,7 +24,8 @@ def genera_pdf_verifica(argomento, difficolta, testo_corpo):
         [Paragraph(f"Verifica Scritta Valutativa ({difficolta})", stile_titolo_l), Paragraph(f"Materia/Oggetto: {argomento}", stile_titolo_r)]
     ]
     
-    tabella = Table(dati_tabella, colWidths=[300, 204])
+    # Sintassi corretta con le larghezze esplicite per le colonne
+    tabella = Table(dati_tabella, colWidths=[370, 170])
     tabella.setStyle(TableStyle([
         ('LINEBELOW', (0, 2), (1, 2), 1.5, colors.HexColor('#0f172a')),
         ('BOTTOMPADDING', (0, 0), (1, 2), 8),
@@ -115,7 +116,7 @@ def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_ht
 
 
 # ==========================================================================
-# 🔍 SEZIONE NUOVA: ASSISTENTE CORREZIONE MULTIMODALE CON EXPORT PDF
+# 🔍 SEZIONE: ASSISTENTE CORREZIONE MULTIMODALE CON EXPORT PDF
 # ==========================================================================
 
 def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
@@ -164,7 +165,6 @@ def mostra_interfaccia_correzione(client, types):
     
     st.markdown("<h4>📷 Acquisizione Elaborato (Scatta Foto o Carica Immagine)</h4>", unsafe_allow_html=True)
     
-    # Due opzioni di caricamento comode affiancate
     tab_carica, tab_scatta = st.tabs(["📁 Carica File Immagine", "📸 Usa Fotocamera"])
     file_immagine = None
     
@@ -188,7 +188,6 @@ def mostra_interfaccia_correzione(client, types):
             st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
         else:
             with st.spinner("Il docente AI sta analizzando l'immagine dell'elaborato..."):
-                # Prompt con istruzioni stringenti sul voto in decimi
                 sys_p = (
                     "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
                     "Trova gli errori ortografici, logici o matematici e commentali dettagliatamente. "

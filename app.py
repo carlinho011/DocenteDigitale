@@ -1,6 +1,7 @@
 import streamlit as st, os, json, re, time
 import correttore
 
+# Configurazione della pagina
 st.set_page_config(
     page_title="EduCorrect - AI per Professori", 
     page_icon="📝", 
@@ -36,9 +37,9 @@ if "utente_connesso" not in st.session_state: st.session_state["utente_connesso"
 
 # --- SCHERMATA LOGIN ---
 if not st.session_state["autenticato"]:
-    st.markdown("<div style='max-width: 500px; margin: 80px auto; padding: 40px; background: white; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.05);'>", unsafe_allow_html=True)
-    st.markdown("<h2 style='color:#1e293b !important; font-family:sans-serif;'>🔒 Area Riservata Docenti</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #64748b !important; font-family:sans-serif; margin-bottom: 25px;'>Benvenuto su EduCorrect. Inserisci le tue credenziali per accedere.</p>", unsafe_allow_html=True)
+    st.markdown("<div class='box-login'>", unsafe_allow_html=True)
+    st.markdown("<h2>🔒 Area Riservata Docenti</h2>", unsafe_allow_html=True)
+    st.markdown("<p>Benvenuto su EduCorrect. Inserisci le tue credenziali per accedere.</p>", unsafe_allow_html=True)
     em = st.text_input("Email:")
     pw = st.text_input("Password:", type="password")
     if st.button("Accedi al Registro", use_container_width=True):
@@ -75,9 +76,9 @@ if st.sidebar.button("🚪 Disconnetti ed Esci", use_container_width=True):
 # --- APPLICAZIONE PRINCIPALE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.title("🚀 Generatore Integrato di Verifiche")
-    st.markdown("<p style='color: #94a3b8 !important;'>Configura i parametri ministeriali per strutturare il compito in classe.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='color: #cbd5e1 !important;'>Configura i parametri ministeriali per strutturare il compito in classe.</p>", unsafe_allow_html=True)
     
-    st.markdown("<div style='background-color: rgba(255,255,255,0.02); padding: 25px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 25px;'>", unsafe_allow_html=True)
+    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
     with col1: argomento = st.text_input("Argomento Didattico:", placeholder="Es. Sigmund Freud, Equazioni di secondo grado...")
     with col2: stile = st.selectbox("Tipologia Quesiti:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])

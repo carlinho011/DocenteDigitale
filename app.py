@@ -182,3 +182,4 @@ if modalita == "🚀 Genera Nuova Verifica":
         )
 
 elif modalita == "🔍 Scansiona e Correggi":
+    correttore.mostra_interfaccia_correzione(client, types)

@@ -10,12 +10,10 @@
 
 /* 🌌 SFONDO BLU SCURO REALE E PROFONDO CON GRIGLIA A PUNTINI */
 html, body, [data-testid="stAppViewContainer"], .stApp {
-    /* Gradiente calibrato rigidamente sulle sfumature del Blu Scuro d'ufficio e dell'Oceano Notturno */
     background: linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;
     background-size: 400% 400% !important;
     animation: gradienteScuro 20s ease infinite !important;
     
-    /* Griglia geometrica e puntini luminosi color indaco/blu elettrico ad alta visibilità */
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px),

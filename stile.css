@@ -10,6 +10,15 @@ html, body, [data-testid="stAppViewContainer"] {
     font-family: 'Inter', sans-serif !important;
 }
 
+/* ❌ RIMOZIONE STRISCIA BIANCA E BLOCCHI DI INTESTAZIONE DI STREAMLIT */
+[data-testid="stHeader"] {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+[data-testid="stHeader"]::before {
+    display: none !important;
+}
+
 /* Rende trasparente il contenitore dei blocchi per mostrare lo sfondo */
 [data-testid="stVerticalBlock"] {
     background-color: transparent !important;

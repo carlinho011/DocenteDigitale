@@ -23,35 +23,35 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
     background-attachment: fixed !important;
 }
 
-/* 🎨 CORREZIONE CONTRASTI E COLORI DEI TESTI DI STREAMLIT (LEGGIBILITÀ) */
-[data-testid="stAppViewContainer"] * {
-    color: #f8fafc; /* Forza tutti i testi normali a diventare bianchi/luminosi */
+/* 🎨 LEGGIBILITÀ DI BASE: FORZATURA TESTI GENERALI DEL SITO IN BIANCO NITIDO */
+h1, h2, h3, h4, h5, h6, p, span, li, label, div {
+    color: #f8fafc !important;
 }
 
-/* Specifico per etichette dei moduli (es. "Argomento Didattico", "Numero domande") */
+/* Specifico per le scritte sopra i controlli (es. "Argomento Didattico", "Numero domande") */
 .stWidgetForm label, .stTextInput label, .stSelectbox label, .stSlider label, label p {
     color: #cbd5e1 !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
 }
 
-/* Riquadri di input testo, tendine e selettori (Sfondo scuro ma leggibile con testo bianco) */
+/* 📥 SCATOLE DI INPUT, TENDINE E CAMPI DI TESTO (Scuro Elegante con Scritta Bianca) */
 div[data-baseweb="input"], div[data-baseweb="select"], .stSelectbox, .stTextInput input, .stTextArea textarea {
-    background-color: #1e293b !important; /* Grigio ardesia scuro per i box */
+    background-color: #1e293b !important;
     color: #ffffff !important;
-    border: 1px solid #334155 !important;
+    border: 1px solid #475569 !important;
     border-radius: 6px !important;
 }
+input, textarea {
+    color: #ffffff !important;
+}
 
-/* Opzioni interne quando si apre un menu a tendina */
-ul[role="listbox"] li {
+/* Opzioni all'interno delle tendine quando si aprono */
+div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     background-color: #1e293b !important;
     color: #ffffff !important;
 }
-ul[role="listbox"] li:hover {
-    background-color: #334155 !important;
-}
 
-/* Trasparenze per evitare blocchi grigi/bianchi nativi */
+/* Trasparenze per evitare blocchi neri nativi di Streamlit */
 [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
     background-color: transparent !important;
     background: transparent !important;
@@ -70,7 +70,7 @@ header, [data-testid="stHeader"] {
 
 /* Sidebar stile vetro satinato scuro (Glassmorphism) */
 [data-testid="stSidebar"] {
-    background-color: rgba(6, 9, 20, 0.75) !important;
+    background-color: rgba(6, 9, 20, 0.8) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
@@ -79,7 +79,7 @@ header, [data-testid="stHeader"] {
     color: #f8fafc !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE (Resta bianco puro come un vero foglio di carta) */
+/* 📝 FOGLIO WORD MINISTERIALE PREMIUM (Isolato in Bianco Carta Reale) */
 .foglio-word { 
     background-color: #ffffff !important; 
     padding: 55px 70px !important; 
@@ -90,10 +90,18 @@ header, [data-testid="stHeader"] {
     border-radius: 10px !important;
 }
 
-/* ⚠️ IMPORTANTE: Forza tutti i testi dentro il foglio Word a rimanere NERI */
-.foglio-word, .foglio-word *, .tabella-intestazione, .tabella-intestazione td, .foglio-word div, .foglio-word b {
+/* 🔒 BLOCCO RIGIDO: Forza tutti i testi dentro il foglio Word a rimanere NERI */
+.foglio-word, 
+.foglio-word *, 
+.tabella-intestazione, 
+.tabella-intestazione td, 
+.foglio-word div, 
+.foglio-word b, 
+.foglio-word p, 
+.foglio-word span {
     color: #1e293b !important;
     font-family: 'Times New Roman', Times, serif !important;
+    text-shadow: none !important;
 }
 
 .tabella-intestazione { 
@@ -107,7 +115,7 @@ header, [data-testid="stHeader"] {
     padding: 8px 0 !important; 
 }
 
-/* Box Valutazione per i Compiti (All'interno mantiene i testi scuri e leggibili) */
+/* 📋 BOX VALUTAZIONE CORREZIONE COMPITI (Sfondo Bianco con Scritta Nera) */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
     background-color: #ffffff !important; 
@@ -116,25 +124,30 @@ header, [data-testid="stHeader"] {
     border-radius: 8px !important; 
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4) !important;
 }
-.box-valutazione, .box-valutazione * {
+.box-valutazione, 
+.box-valutazione *, 
+.box-valutazione p, 
+.box-valutazione span, 
+.box-valutazione div {
     color: #1e293b !important;
     font-family: 'Inter', sans-serif !important;
+    text-shadow: none !important;
 }
 
-/* Pulsanti premium con neon indaco */
+/* 🖨️ PULSANTI PREMIUM INTERFACCIA (Colore Oro/Giallo con Scritta Scura) */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     letter-spacing: 0.5px !important;
-    background-color: #fbbf24 !important; /* Colore giallo/oro per i tasti principali */
-    color: #0f172a !important; /* Testo scuro sopra il pulsante giallo */
+    background-color: #fbbf24 !important;
     border: none !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
 }
 
-div.stButton > button * {
+/* Forza il testo dell'etichetta del pulsante a essere scuro */
+div.stButton > button, div.stButton > button * {
     color: #0f172a !important;
 }
 
@@ -144,4 +157,5 @@ div.stButton > button:hover {
     background-color: #f59e0b !important;
 }
 
+/* Nasconde gli elementi di branding predefiniti */
 #MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; display: none !important; }

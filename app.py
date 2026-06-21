@@ -9,16 +9,21 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# Inizializzazione dello stato del tema (Default: Total Dark)
+if "tema_scelto" not in st.session_state:
+    st.session_state["tema_scelto"] = "Total Dark"
+
 # --- FUNZIONE PER CARICARE IL CSS DA FILE ESTERNO ---
 def carica_css(nome_file):
-    if os.path.exists(nome_file.split("?")[0]):  # Estrae il percorso reale senza la query string
-        with open(nome_file.split("?")[0], "r", encoding="utf-8") as f:
+    if os.path.exists(nome_file):
+        with open(nome_file, "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     else:
         st.warning(f"⚠️ File {nome_file} non trovato. Grafica di default applicata.")
 
-# 🚀 UNA SOLA RIGA MODIFICATA: Forza l'aggiornamento grafico saltando la cache di Streamlit
-carica_css(f"stile.css?v={time.time()}")
+# Forza l'iniezione del tag identificatore e del CSS pulendo la cache
+st.markdown(f"<div id='tema-attivo' class='tema-{st.session_state['tema_scelto'].lower().replace(' ', '-')}' style='display:none;'></div>", unsafe_allow_html=True)
+carica_css("stile.css")
 
 if "GEMINI_KEY" not in st.secrets: 
     st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets.")
@@ -54,7 +59,15 @@ if not st.session_state["autenticato"]:
 # --- BARRA LATERALE ---
 st.sidebar.markdown("<h2 style='text-align: center; color: #fbbf24 !important; font-family:sans-serif;'>📝 EduCorrect AI</h2>", unsafe_allow_html=True)
 st.sidebar.markdown(f"<p style='text-align: center; color: #94a3b8 !important; font-size: 13px;'>👤 {st.session_state['utente_connesso']}</p>", unsafe_allow_html=True)
-st.sidebar.markdown("<br>", unsafe_allow_html=True)
+
+# Selettore Tema Interfaccia
+st.sidebar.markdown("---")
+scelta_tema = st.sidebar.selectbox("🎨 INTERFACCIA SITO:", ["Total Dark", "Light Mode"], index=0 if st.session_state["tema_scelto"] == "Total Dark" else 1)
+if scelta_tema != st.session_state["tema_scelto"]:
+    st.session_state["tema_scelto"] = scelta_tema
+    st.rerun()
+
+st.sidebar.markdown("---")
 
 def reset_modalita():
     if "testo_verifica" in st.session_state: del st.session_state["testo_verifica"]
@@ -76,7 +89,7 @@ if st.sidebar.button("🚪 Disconnetti ed Esci", use_container_width=True, type=
 # --- APPLICAZIONE PRINCIPALE ---
 if modalita == "🚀 Genera Nuova Verifica":
     st.title("🚀 Generatore Integrato di Verifiche")
-    st.markdown("<p style='color: #cbd5e1 !important;'>Configura i parametri ministeriali per strutturare il compito in classe.</p>", unsafe_allow_html=True)
+    st.markdown("<p style='margin-top: -15px;'>Configura i parametri ministeriali per strutturare il compito in classe.</p>", unsafe_allow_html=True)
     
     st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
@@ -92,7 +105,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         else:
             with st.spinner("L'intelligenza artificiale sta elaborando e ordinando la verifica..."):
                 sys_p = (
-                    "Sei un assistente didattico esperto per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. "
+                    "Sei un assistente didattico expert per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. "
                     "NON includere introduzioni discorsive (es. 'Ecco una verifica...'), e non inserire intestazioni per nome, cognome, classe, data o istituto. "
                     "REGLA ORDINE DOMANDE MISTE: Se il tipo richiesto è 'Domande miste', ordina e raggruppa i quesiti in modo logico per tipologia. "
                     "Ad esempio metti prima tutte le domande a Scelta Multipla, poi tutte le domande Vero/Falso, e infine le Risposte Aperte. "

@@ -1,8 +1,26 @@
 import streamlit as st, os, json, re, time
 import correttore
 
-# Configurazione della pagina
-st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
+# 🎨 FORZATURA TEMA SCURO DA CODICE (Elimina la striscia bianca)
+st.set_page_config(
+    page_title="EduCorrect - AI per Professori", 
+    page_icon="📝", 
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# Iniezione immediata delle variabili del tema nativo di Streamlit nel browser
+st.markdown("""
+    <script>
+        var root = window.parent.document.querySelector(':root');
+        if (root) {
+            root.style.setProperty('--st-background-color', '#0f172a');
+            root.style.setProperty('--st-secondary-background-color', '#1e293b');
+            root.style.setProperty('--st-text-color', '#f8fafc');
+            root.style.setProperty('--st-primary-color', '#fbbf24');
+        }
+    </script>
+""", unsafe_allow_html=True)
 
 # --- FUNZIONE PER CARICARE IL CSS DA FILE ESTERNO ---
 def carica_css(nome_file):
@@ -164,4 +182,3 @@ if modalita == "🚀 Genera Nuova Verifica":
         )
 
 elif modalita == "🔍 Scansiona e Correggi":
-    correttore.mostra_interfaccia_correzione(client, types)

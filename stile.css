@@ -1,48 +1,70 @@
-/* Sfondo generale e font della piattaforma */
+/* Sfondo generale e font della piattaforma con pattern sfizioso ed elegante */
 @import url('https://googleapis.com');
 
 html, body, [data-testid="stAppViewContainer"] {
-    background-color: #f8fafc !important;
+    /* Gradiente premium blu notte/ardesia */
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
+    /* Pattern geometrico a punti (dot-grid) sovrapposto */
+    background-image: radial-gradient(#334155 1px, transparent 1px) !important;
+    background-size: 20px 20px !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* Sidebar elegante e minimale */
+/* Rende trasparente il contenitore dei blocchi per mostrare lo sfondo */
+[data-testid="stVerticalBlock"] {
+    background-color: transparent !important;
+}
+
+/* Sidebar elegante e minimale con effetto vetro satinato */
 [data-testid="stSidebar"] {
-    background-color: #0f172a !important;
-    color: #ffffff !important;
-    box-shadow: 4px 0 15px rgba(15, 23, 42, 0.08) !important;
+    background-color: rgba(15, 23, 42, 0.75) !important;
+    backdrop-filter: blur(12px) !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3) !important;
 }
 [data-testid="stSidebar"] * {
-    color: #ffffff !important;
+    color: #f8fafc !important;
 }
 [data-testid="stSidebar"] .stRadio > label {
-    color: #94a3b8 !important;
+    color: #cbd5e1 !important;
     font-weight: 600 !important;
 }
 
-/* Titoli Principali */
+/* Titoli Principali adattati allo sfondo scuro */
 h1, h2, h3 {
-    color: #1e293b !important;
+    color: #f8fafc !important;
     font-family: 'Inter', sans-serif !important;
     font-weight: 700 !important;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.2);
 }
 
-/* Contenitore stile foglio Word Ministeriale Premium */
+/* Sottotitoli e testi descrittivi di Streamlit */
+.stMarkdown p {
+    color: #94a3b8 !important;
+}
+
+/* Box bianchi per input e form per contrasto perfetto (Stile Card) */
+div[data-testid="stMarkdownContainer"] + div, .stTextInput, .stSelectbox, .stSlider {
+    background-color: rgba(255, 255, 255, 0.03) !important;
+    border-radius: 8px !important;
+}
+
+/* Contenitore stile foglio Word Ministeriale Premium (Resta bianco per simulare la carta reale) */
 .foglio-word { 
     background-color: #ffffff !important; 
     color: #1e293b !important; 
     padding: 50px 65px !important; 
     margin: 30px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 10px 30px rgba(15, 23, 42, 0.08) !important; 
-    border: 1px solid #e2e8f0 !important; 
-    border-radius: 8px !important;
+    box-shadow: 0px 15px 40px rgba(0, 0, 0, 0.4) !important; 
+    border: 1px solid #ffffff !important; 
+    border-radius: 6px !important;
     font-family: 'Times New Roman', Times, serif !important; 
     line-height: 1.7 !important; 
     font-size: 16px !important; 
 }
 
-/* Tabella Intestazione Compito */
+/* Tabella Intestazione Compito sul foglio bianco */
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
@@ -60,22 +82,29 @@ h1, h2, h3 {
 /* Box Valutazione per la Correzione Compiti */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
-    background-color: #fef2f2 !important; 
+    background-color: #ffffff !important; 
     padding: 20px 25px !important; 
     margin: 20px 0 !important; 
-    border-radius: 4px !important; 
-    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.04) !important;
+    border-radius: 6px !important; 
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2) !important;
     font-family: 'Inter', sans-serif !important;
     color: #1e293b !important;
     line-height: 1.6 !important;
 }
 
-/* Pulsanti personalizzati */
+/* Pulsanti personalizzati con effetto lucido */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 10px 20px !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.5px !important;
     transition: all 0.2s ease !important;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15) !important;
+}
+
+div.stButton > button:hover {
+    transform: translateY(-1px) !important;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.25) !important;
 }
 
 /* Nascondi elementi di branding superflui */

@@ -1,7 +1,7 @@
 import streamlit as st, os, json, re, time
 import correttore
 
-# Configurazione della pagina
+# Configurazione iniziale della pagina
 st.set_page_config(
     page_title="EduCorrect - AI per Professori", 
     page_icon="📝", 

@@ -4,6 +4,8 @@ import json
 import re
 import time
 import io
+import jwt  # Ricorda di aggiungere PyJWT al tuo ambiente o requirements.txt
+from streamlit_oauth import OAuth2Component
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -26,7 +28,7 @@ def carica_css(nome_file, tema):
         bg = "#f8fafc !important;"
     st.markdown(f"<style>html, body, [data-testid='stAppViewContainer'], .stApp {{ background: {bg} }}</style>", unsafe_allow_html=True)
 
-st.markdown(f"<div id='tema-attivo' class='tema-{st.session_state['tema_scelto'].lower().replace(' ', '-')}' style='display:none;'></div>", unsafe_allow_html=True)
+st.markdown(f"<div id='tema-attivo' class='tema-{st.session_state['tema_scelto'].lower().replace(' ', '-')} style='display:none;'></div>", unsafe_allow_html=True)
 carica_css("stile.css", st.session_state["tema_scelto"])
 
 # --- CONTROLLI DI SICUREZZA API E SDK ---
@@ -42,21 +44,63 @@ except Exception as e:
     st.error(f"Errore SDK Gemini: {e}")
     st.stop()
 
-# --- AUTENTICAZIONE ---
-UTENTI = json.loads(st.secrets["UTENTI_ABILITATI"]) if "UTENTI_ABILITATI" in st.secrets else {"admin@educorrect.it": "AdminPass2026"}
+# --- REQUISITI SEGRETI GOOGLE OAUTH ---
+config_error = False
+for chiave in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "DOMINIO_ISTITUZIONALE"]:
+    if chiave not in st.secrets:
+        st.error(f"⚠️ Manca la chiave '{chiave}' nei tuoi Secrets di Streamlit.")
+        config_error = True
+if config_error:
+    st.stop()
+
+# --- AUTENTICAZIONE GOOGLE OAUTH2 ---
 if "autenticato" not in st.session_state: 
     st.session_state["autenticato"] = False
+if "info_utente" not in st.session_state:
+    st.session_state["info_utente"] = None
+
+CLIENT_ID = st.secrets["GOOGLE_CLIENT_ID"]
+CLIENT_SECRET = st.secrets["GOOGLE_CLIENT_SECRET"]
+REDIRECT_URI = st.secrets["GOOGLE_REDIRECT_URI"]
+DOMINIO_SCUOLA = st.secrets["DOMINIO_ISTITUZIONALE"].lower().strip()
+
+AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
+TOKEN_URL = "https://oauth2.googleapis.com/token"
+REVOKE_URL = "https://oauth2.googleapis.com/revoke"
+
+oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, AUTHORIZATION_URL, TOKEN_URL, TOKEN_URL, REVOKE_URL)
 
 if not st.session_state["autenticato"]:
-    st.markdown("<div class='box-login'><h2>🔒 Area Riservata Docenti</h2><p>Inserisci le tue credenziali.</p>", unsafe_allow_html=True)
-    em = st.text_input("Email:")
-    pw = st.text_input("Password:", type="password")
-    if st.button("Accedi al Registro", use_container_width=True, type="primary"):
-        if em in UTENTI and pw == UTENTI[em]: 
-            st.session_state["autenticato"] = True
-            st.rerun()
-        else: 
-            st.error("❌ Credenziali errate.")
+    st.markdown("<div class='box-login'><h2>🔒 Area Riservata Docenti</h2><p>Accedi in modo sicuro con il tuo account istituzionale della scuola.</p>", unsafe_allow_html=True)
+    
+    result = oauth2.authorize_button(
+        name="Accedi con Google",
+        redirect_uri=REDIRECT_URI,
+        scope="openid profile email",
+        key="google_auth",
+        use_container_width=True
+    )
+    
+    if result and "token" in result:
+        try:
+            id_token = result["token"]["id_token"]
+            payload = jwt.decode(id_token, options={"verify_signature": False})
+            
+            email_utente = payload.get("email", "").lower().strip()
+            nome_utente = payload.get("name", "Docente")
+            
+            # Controllo di sicurezza: verifichiamo il finale della mail
+            if email_utente.endswith(f"@{DOMINIO_SCUOLA}"):
+                st.session_state["autenticato"] = True
+                st.session_state["info_utente"] = {"email": email_utente, "nome": nome_utente}
+                st.success(f"Benvenuto Prof. {nome_utente}!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error(f"❌ Accesso negato. Devi utilizzare l'account istituzionale @{DOMINIO_SCUOLA}")
+        except Exception as e:
+            st.error(f"Errore durante la lettura dei dati di login: {e}")
+            
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
@@ -197,7 +241,7 @@ def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_ht
 
 def mostra_interfaccia_correzione(client, types):
     st.title("🔍 Assistente AI alla Correzione Automatica")
-    st.markdown("<p>Carica l'immagine del compito o usa la fotocamera. L'AI rileverà autonomamente l'alunno, l'argomento ed eseguirà la valutazione strutturata.</p>", unsafe_allow_html=True)
+    st.markdown("<p>Carica l'immagine del compito o usa la fotocamera. L'AI rileverà l'alunno, la traccia ed eseguirà la valutazione.</p>", unsafe_allow_html=True)
     
     st.markdown("<h4>📷 Acquisizione Elaborato (Scatta Foto o Carica Immagine)</h4>", unsafe_allow_html=True)
     tab_carica, tab_scatta = st.tabs(["📁 Carica File Immagine", "📸 Usa Fotocamera"])
@@ -220,155 +264,4 @@ def mostra_interfaccia_correzione(client, types):
         else:
             with st.spinner("Il docente AI sta leggendo ed esaminando l'immagine dell'elaborato..."):
                 sys_p = (
-                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito.\n"
-                    "Istruzioni tassative di formattazione dell'output:\n"
-                    "1. Trova e leggi il nome dello studente scritto sul foglio. Inizia il testo ESATTAMENTE con la riga: 'STUDENTE: [Nome Rilevato]'\n"
-                    "2. Trova e capisci l'argomento o la traccia della domanda. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia o Argomento Rilevato]'\n"
-                    "3. Procedi con l'analisi: trascrivi brevemente il testo se scritto a mano, trova gli errori ortografici, logici o matematici e commentali dettagliatamente.\n"
-                    "4. Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' "
-                    "con una valutazione espressa in decimi (es. VOTO FINALE: 7/10) motivandola brevemente."
-                )
-                contenuto_prompt = "Analizza l'immagine allegata. Estrai il nome dello studente, la traccia/argomento, correggi tutti gli errori ed esprimi il voto finale."
-                
-                try:
-                    risposta = client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=[
-                            types.Part.from_bytes(data=file_immagine, mime_type="image/jpeg"),
-                            contenuto_prompt
-                        ],
-                        config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.3)
-                    )
-                    
-                    analisi_risultato = risposta.text
-                    
-                    # Parsing per estrarre dinamicamente Nome Alunno e Traccia dal testo generato dall'AI
-                    match_studente = re.search(r'(?i)STUDENTE:\s*(.*)', analisi_risultato)
-                    match_traccia = re.search(r'(?i)TRACCIA RILEVATA:\s*(.*)', analisi_risultato)
-                    
-                    nome_alunno = match_studente.group(1).strip() if match_studente else "Non rilevato dal foglio"
-                    traccia_rilevata = match_traccia.group(1).strip() if match_traccia else "Non rilevata dal foglio"
-                    
-                    # Pulizia dei tag di servizio dal testo della correzione per l'anteprima pulita
-                    corpo_correzione = re.sub(r'(?i)STUDENTE:.*?\n', '', analisi_risultato, count=1)
-                    corpo_correzione = re.sub(r'(?i)TRACCIA RILEVATA:.*?\n', '', corpo_correzione, count=1)
-                    
-                    risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', corpo_correzione)
-                    
-                    st.success("✅ Analisi completata con successo!")
-                    st.markdown("<h3>📝 Esito della Correzione Docente</h3>", unsafe_allow_html=True)
-                    
-                    # Visualizzazione strutturata nel foglio-word
-                    st.markdown(f"""
-                    <div class="foglio-word">
-                        <table class="tabella-intestazione">
-                            <tr>
-                                <td style="width:60%; font-weight:bold;">Registro Nazionale Correzioni AI</td>
-                                <td style="width:40%; text-align:right; font-weight:bold;">Data Revisione: {time.strftime('%d/%m/%Y')}</td>
-                            </tr>
-                            <tr>
-                                <td>Alunno/a: <strong>{nome_alunno}</strong></td>
-                                <td style="text-align:right;">Esaminatore: AI Professore</td>
-                            </tr>
-                        </table>
-                        <div class="box-valutazione">
-                            <h4>📋 VERBALE DI VALUTAZIONE DIRETTA</h4>
-                            <p><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
-                        </div>
-                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{risultato_f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-                    st.markdown("<h4 style='margin-top:0; font-family:sans-serif;'>📦 Esporta Verbale di Valutazione</h4>", unsafe_allow_html=True)
-                    
-                    pdf_valutazione = genera_pdf_valutazione(nome_alunno, traccia_rilevata, corpo_correzione)
-                    st.download_button(
-                        label="📄 SCARICA VALUTAZIONE IN PDF",
-                        data=pdf_valutazione,
-                        file_name=f"Valutazione_{nome_alunno.replace(' ', '_')}.pdf",
-                        mime="application/pdf",
-                        type="primary",
-                        use_container_width=True
-                    )
-                    st.markdown("</div>", unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Si è verificato un errore durante l'invocazione dell'AI: {e}")
-
-# --- BARRA LATERALE E SWITCH TEMA ---
-st.sidebar.markdown("<h2 style='text-align: center; color: #fbbf24 !important;'>📝 EduCorrect AI</h2>", unsafe_allow_html=True)
-scelta_tema = st.sidebar.selectbox("🎨 INTERFACCIA SITO:", ["Total Dark", "Light Mode"], index=0 if st.session_state["tema_scelto"] == "Total Dark" else 1)
-if scelta_tema != st.session_state["tema_scelto"]: 
-    st.session_state["tema_scelto"] = scelta_tema
-    st.rerun()
-
-modalita = st.sidebar.radio("FUNZIONALITÀ PLANCIA:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
-if st.sidebar.button("🚪 Esci", use_container_width=True, type="secondary"): 
-    st.session_state["autenticato"] = False
-    st.rerun()
-
-# --- PLANCIA GENERATORE VERIFICHE ---
-if modalita == "🚀 Genera Nuova Verifica":
-    st.title("🚀 Generatore Integrato di Verifiche")
-    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-    col1, col2, col3 = st.columns(3)
-    with col1: arg = st.text_input("Argomento Didattico:", placeholder="Es. Sigmund Freud...")
-    with col2: stl = st.selectbox("Tipologia Quesiti:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
-    with col3: df = st.selectbox("Livello di Difficoltà:", ["facile", "media", "difficile"])
-    num = st.slider("Numero Totale di Domande:", 1, 20, 5)
-    st.markdown("</div>", unsafe_allow_html=True)
-    
-    if st.button("🪄 Elabora Struttura Verifica e Soluzioni", type="primary", use_container_width=True):
-        if not arg: 
-            st.error("Inserisci un argomento!")
-        else:
-            with st.spinner("Generazione in corso..."):
-                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera quesiti e risposte in italiano ordinati per tipologia, con numerazione progressiva da 1 a N. Inserisci il tag [SOLUZIONI] prima delle soluzioni. No introduzioni, no campi nome/classe."
-                user_p = f"Crea una verifica superiore di livello {df} su {arg}. Tipo: {stl}. Numero quesiti: {num}."
-                try:
-                    risp = client.models.generate_content(
-                        model='gemini-2.5-pro', 
-                        contents=user_p, 
-                        config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5)
-                    )
-                    st.session_state["testo_verifica"] = risp.text
-                    st.success("Generata con successo!")
-                except Exception:
-                    try:
-                        risp = client.models.generate_content(
-                            model='gemini-2.5-flash', 
-                            contents=user_p, 
-                            config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5)
-                        )
-                        st.session_state["testo_verifica"] = risp.text
-                        st.success("Generata con successo (Flash)!")
-                    except Exception as e: 
-                        st.error(f"Errore server: {e}")
-
-    if "testo_verifica" in st.session_state:
-        tg = re.sub(r'(?i)^[^1A-Za-z]*(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', st.session_state['testo_verifica'])
-        tg = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto|Materia).*?(\[.*?\]|__+)', '', tg)
-        tg = re.sub(r'\*\*(.*?)\*\*|\*(.*?)\*', r'<b>\1\2</b>', tg.strip())
-        dom, sol = tg.split("[SOLUZIONI]") if "[SOLUZIONI]" in tg else (tg, "Nessuna chiave di correzione.")
-        
-        i_html = f"""
-        <table class='tabella-intestazione'>
-            <tr>
-                <td style='width:60%; font-weight:bold;'>Istituto Statale di Istruzione Superiore</td>
-                <td style='width:40%; text-align:right; font-weight:bold;'>Data: ____/____/________</td>
-            </tr>
-            <tr>
-                <td>Alunno/a: _________________________________________</td>
-                <td style='text-align:right;'>Classe: ________ Sez. ____</td>
-            </tr>
-            <tr>
-                <td style='padding-top:15px; font-weight:bold;'>Verifica Scritta ({df.capitalize()})</td>
-                <td style='padding-top:15px; text-align:right; font-weight:bold;'>Oggetto: {arg.capitalize()}</td>
-            </tr>
-        </table>
-        """
-        renderizza_documento_stampa(arg.capitalize(), df.capitalize(), i_html, dom.replace('\n', '<br>'), dom.strip(), sol.strip())
-
-# --- PLANCIA SCANNER E CORREZIONE ---
-elif modalita == "🔍 Scansiona e Correggi":
-    mostra_interfaccia_correzione(client, types)
+                    "Sei un profess

@@ -11,14 +11,14 @@ st.set_page_config(
 
 # --- FUNZIONE PER CARICARE IL CSS DA FILE ESTERNO ---
 def carica_css(nome_file):
-    if os.path.exists(nome_file):
-        with open(nome_file, "r", encoding="utf-8") as f:
+    if os.path.exists(nome_file.split("?")[0]):  # Estrae il percorso reale senza la query string
+        with open(nome_file.split("?")[0], "r", encoding="utf-8") as f:
             st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
     else:
         st.warning(f"⚠️ File {nome_file} non trovato. Grafica di default applicata.")
 
-# Caricamento del file grafico esterno stile.css
-carica_css("stile.css")
+# 🚀 UNA SOLA RIGA MODIFICATA: Forza l'aggiornamento grafico saltando la cache di Streamlit
+carica_css(f"stile.css?v={time.time()}")
 
 if "GEMINI_KEY" not in st.secrets: 
     st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets.")
@@ -42,7 +42,7 @@ if not st.session_state["autenticato"]:
     st.markdown("<p>Benvenuto su EduCorrect. Inserisci le tue credenziali per accedere.</p>", unsafe_allow_html=True)
     em = st.text_input("Email:")
     pw = st.text_input("Password:", type="password")
-    if st.button("Accedi al Registro", use_container_width=True):
+    if st.button("Accedi al Registro", use_container_width=True, type="primary"):
         if em in UTENTI and pw == UTENTI[em]: 
             st.session_state["autenticato"], st.session_state["utente_connesso"] = True, em
             st.rerun()
@@ -67,7 +67,7 @@ modalita = st.sidebar.radio(
 )
 st.sidebar.markdown("<br><br><br>", unsafe_allow_html=True)
 
-if st.sidebar.button("🚪 Disconnetti ed Esci", use_container_width=True):
+if st.sidebar.button("🚪 Disconnetti ed Esci", use_container_width=True, type="secondary"):
     st.session_state["autenticato"] = False
     reset_modalita()
     st.rerun()
@@ -86,7 +86,7 @@ if modalita == "🚀 Genera Nuova Verifica":
     num = st.slider("Numero Totale di Domande:", 1, 20, 5)
     st.markdown("</div>", unsafe_allow_html=True)
     
-    if st.button("🪄 Elabora Struttura Verifica e Soluzioni", type="primary"):
+    if st.button("🪄 Elabora Struttura Verifica e Soluzioni", type="primary", use_container_width=True):
         if not argomento: 
             st.error("Inserisci un argomento didattico prima di procedere!")
         else:
@@ -145,7 +145,7 @@ if modalita == "🚀 Genera Nuova Verifica":
             testo_puro_soluzioni = parti_pure[1].strip()
         else:
             testo_puro_domande = tg_pulito.strip()
-            testo_puro_soluzioni = "Nessuna chiave di correzione fornita."
+            testo_puro_soluzioni = "Nessuna chiave di correzione fornita dal modello."
 
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)

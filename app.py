@@ -72,7 +72,7 @@ if modalita == "🚀 Genera Nuova Verifica":
             st.error("Scrivi un argomento!")
         else:
             with st.spinner("Generazione in corso..."):
-                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera la verifica e le risposte in italiano. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML (es. usare x², √x, ±, ≠, ≤, ≥, ÷, ×, ∫, λ, π, ½, ¼, ∛). Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
+                sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera direttamente i quesiti e le risposte in italiano. NON includere introduzioni come 'Ecco una verifica...', e non inserire intestazioni per nome, cognome, classe, data o istituto. IMPORTANTE MATEMATICA: NON usare codice LaTeX con $ o $$. Scrivi le formule e i simboli usando i caratteri Unicode estesi o entità matematiche leggibili in HTML. Inserisci il tag [SOLUZIONI] subito prima delle chiavi di correzione."
                 user_p = f"Crea una verifica superiore di livello {diff} su {argomento}. Tipo: {stile}. Numero quesiti: {num}."
                 risposta_ver = None
                 try:
@@ -92,15 +92,22 @@ if modalita == "🚀 Genera Nuova Verifica":
     if "testo_verifica" in st.session_state:
         tg = st.session_state['testo_verifica']
         
-        # 1. Rimuoviamo intestazioni duplicate generate dall'AI
-        tg_pulito = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto):\s*[_.]+', '', tg)
-        tg_pulito = re.sub(r'(?i)(Nome e Cognome|Classe e Sezione):?\s*___________________________', '', tg_pulito)
+        # 1. Rimuove introduzioni discorsive dell'AI (es. "Ecco una verifica su...")
+        tg_pulito = re.sub(r'^(?i)(Ecco|Questo|Di seguito|Verifica).*?(\n|\r)+', '', tg)
         
-        # 2. Converte la sintassi degli asterischi Markdown in tag HTML <b> (Grassetto)
+        # 2. Rimuove blocco dati alunno/classe/data ripetuti con parentesi o trattini
+        tg_pulito = re.sub(r'(?i)(Nome|Cognome|Alunno|Classe|Data|Istituto|Materia|Scuola|Corso|Docente|Professore|Tempo).*?(\[.*?\]|__+)', '', tg_pulito)
+        tg_pulito = re.sub(r'(?i)^.*Verifica di.*$', '', tg_pulito, flags=re.MULTILINE)
+        tg_pulito = re.sub(r'^-+$', '', tg_pulito, flags=re.MULTILINE) # Rimuove linee separatorie ---
+        
+        # Pulizia righe vuote rimaste in testa al documento
+        tg_pulito = tg_pulito.strip()
+        
+        # 3. Converte la sintassi degli asterischi Markdown in tag HTML <b> (Grassetto)
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 3. Gestione del tag delle soluzioni per una separazione pulita delle pagine
+        # 4. Gestione del tag delle soluzioni per una separazione pulita delle pagine
         if "[SOLUZIONI]" in tg_html:
             parti = tg_html.split("[SOLUZIONI]")
             corpo_domande = parti[0].replace('\n', '<br>')
@@ -109,11 +116,10 @@ if modalita == "🚀 Genera Nuova Verifica":
         else:
             c_html = tg_html.replace('\n', '<br>')
         
-        # 4. Layout tabella di intestazione ministeriale unica
+        # 5. Layout tabella di intestazione ministeriale unica
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
         correttore.renderizza_documento_stampa(f"Verifica Scritta ({diff.capitalize()})", argomento.capitalize(), i_html, c_html, "#2e7d32")
 
 elif modalita == "🔍 Scansiona e Correggi":
     correttore.mostra_interfaccia_correzione(client, types)
-  

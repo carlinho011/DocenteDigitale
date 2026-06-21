@@ -2,21 +2,28 @@
 @import url('https://googleapis.com');
 
 html, body, [data-testid="stAppViewContainer"] {
-    /* Gradiente premium blu notte/ardesia */
     background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%) !important;
-    /* Pattern geometrico a punti (dot-grid) sovrapposto */
     background-image: radial-gradient(#334155 1px, transparent 1px) !important;
     background-size: 20px 20px !important;
     font-family: 'Inter', sans-serif !important;
 }
 
-/* ❌ RIMOZIONE STRISCIA BIANCA E BLOCCHI DI INTESTAZIONE DI STREAMLIT */
-[data-testid="stHeader"] {
+/* ❌ RIMOZIONE TOTALE DELLA STRISCIA BIANCA SUPERIORE (FORZATA) */
+[data-testid="stHeader"], 
+header, 
+.st-emotion-cache-18ni7th, 
+.st-emotion-cache-zq5w93,
+header[data-testid="stHeader"] {
     background-color: transparent !important;
     background: transparent !important;
+    backdrop-filter: none !important;
+    display: none !important; /* Nasconde del tutto l'elemento header */
+    height: 0px !important;
 }
-[data-testid="stHeader"]::before {
-    display: none !important;
+
+/* Rimuove lo spazio vuoto superiore (padding) che lascia intravedere la fascia */
+[data-testid="stAppViewContainer"] > section > div {
+    padding-top: 2rem !important;
 }
 
 /* Rende trasparente il contenitore dei blocchi per mostrare lo sfondo */
@@ -29,7 +36,7 @@ html, body, [data-testid="stAppViewContainer"] {
     background-color: rgba(15, 23, 42, 0.75) !important;
     backdrop-filter: blur(12px) !important;
     border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
-    box-shadow: 4px 0 25px rgba(0, 0, 0, 0.3) !important;
+    box-shadow: 4px 0 25 rgba(0, 0, 0, 0.3) !important;
 }
 [data-testid="stSidebar"] * {
     color: #f8fafc !important;
@@ -58,7 +65,7 @@ div[data-testid="stMarkdownContainer"] + div, .stTextInput, .stSelectbox, .stSli
     border-radius: 8px !important;
 }
 
-/* Contenitore stile foglio Word Ministeriale Premium (Resta bianco per simulare la carta reale) */
+/* Contenitore stile foglio Word Ministeriale Premium */
 .foglio-word { 
     background-color: #ffffff !important; 
     color: #1e293b !important; 

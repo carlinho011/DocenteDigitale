@@ -20,14 +20,12 @@ def carica_css(nome_file, tema):
         with open(nome_file, "r", encoding="utf-8") as f:
             st.markdown(f"<style id='css-{time.time()}'>{f.read()}</style>", unsafe_allow_html=True)
     
-    # Lo sfondo dell'app si adatta solo come fallback, il grosso lo fa il file stile.css tramite l'elemento fratello #tema-attivo
     if tema == "Total Dark":
         bg = "linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;"
     else:
         bg = "#f8fafc !important;"
     st.markdown(f"<style>html, body, [data-testid='stAppViewContainer'], .stApp {{ background: {bg} }}</style>", unsafe_allow_html=True)
 
-# Iniezione del tag pivot richiesto dal tuo stile.css per attivare le regole condizionali (~ .main)
 st.markdown(f"<div id='tema-attivo' class='tema-{st.session_state['tema_scelto'].lower().replace(' ', '-')}' style='display:none;'></div>", unsafe_allow_html=True)
 carica_css("stile.css", st.session_state["tema_scelto"])
 
@@ -62,7 +60,7 @@ if not st.session_state["autenticato"]:
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
 
-# --- GENERATORI PDF REPORTLAB NATIVI (STAMPA SU CARTA) ---
+# --- GENERATORI PDF REPORTLAB NATIVI ---
 def genera_pdf_verifica(argomento, difficolta, testo_corpo):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
@@ -142,7 +140,7 @@ def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
     story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — EDULOGIC", stile_titolo))
     story.append(Spacer(1, 15))
     story.append(Paragraph(f"<b>Studente/Alunno:</b> {nome_alunno}", stile_testo))
-    story.append(Paragraph(f"<b>Traccia/Obiettivo:</b> {traccia}", stile_testo))
+    story.append(Paragraph(f"<b>Traccia/Obiettivo rilevato:</b> {traccia}", stile_testo))
     story.append(Spacer(1, 10))
     story.append(Paragraph("📋 ESITO DELLA CORREZIONE E DETTAGLI:", stile_sezione))
     story.append(Spacer(1, 5))
@@ -198,13 +196,8 @@ def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_ht
     st.markdown("</div>", unsafe_allow_html=True)
 
 def mostra_interfaccia_correzione(client, types):
-    st.title("🔍 Assistente AI alla Correzione")
-    st.markdown("<p>Compila i dati dell'alunno, acquisisci lo svolgimento tramite fotocamera o file e ricevi la correzione automatica.</p>", unsafe_allow_html=True)
-    
-    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-    nome_alunno = st.text_input("Nome e Cognome dell'Alunno:", placeholder="Es. Mario Rossi")
-    traccia = st.text_input("Traccia dell'Esercizio o Testo della Domanda:", placeholder="Es. Spiega la teoria della relatività o risolvi il quesito...")
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.title("🔍 Assistente AI alla Correzione Automatica")
+    st.markdown("<p>Carica l'immagine del compito o usa la fotocamera. L'AI rileverà autonomamente l'alunno, l'argomento ed eseguirà la valutazione strutturata.</p>", unsafe_allow_html=True)
     
     st.markdown("<h4>📷 Acquisizione Elaborato (Scatta Foto o Carica Immagine)</h4>", unsafe_allow_html=True)
     tab_carica, tab_scatta = st.tabs(["📁 Carica File Immagine", "📸 Usa Fotocamera"])
@@ -222,18 +215,20 @@ def mostra_interfaccia_correzione(client, types):
             file_immagine = foto_scattata.read()
             
     if st.button("🚀 Elabora, Valuta ed Evidenzia Errori", type="primary", use_container_width=True):
-        if not nome_alunno: st.error("Inserisci il nome dell'alunno prima di avviare l'analisi!")
-        elif not traccia: st.error("Inserisci il testo della traccia originaria per permettere il confronto!")
-        elif not file_immagine: st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
+        if not file_immagine: 
+            st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
         else:
-            with st.spinner("Il docente AI sta analizzando l'immagine dell'elaborato..."):
+            with st.spinner("Il docente AI sta leggendo ed esaminando l'immagine dell'elaborato..."):
                 sys_p = (
-                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
-                    "Trova gli errori ortografici, logici o matematici e commentali dettagliatamente. "
-                    "Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' "
+                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito.\n"
+                    "Istruzioni tassative di formattazione dell'output:\n"
+                    "1. Trova e leggi il nome dello studente scritto sul foglio. Inizia il testo ESATTAMENTE con la riga: 'STUDENTE: [Nome Rilevato]'\n"
+                    "2. Trova e capisci l'argomento o la traccia della domanda. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia o Argomento Rilevato]'\n"
+                    "3. Procedi con l'analisi: trascrivi brevemente il testo se scritto a mano, trova gli errori ortografici, logici o matematici e commentali dettagliatamente.\n"
+                    "4. Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' "
                     "con una valutazione espressa in decimi (es. VOTO FINALE: 7/10) motivandola brevemente."
                 )
-                contenuto_prompt = f"Traccia originale del compito: {traccia}\nNome Alunno: {nome_alunno}\n\nAnalizza il testo scritto nell'immagine allegata ed effettua la correzione completa."
+                contenuto_prompt = "Analizza l'immagine allegata. Estrai il nome dello studente, la traccia/argomento, correggi tutti gli errori ed esprimi il voto finale."
                 
                 try:
                     risposta = client.models.generate_content(
@@ -245,15 +240,25 @@ def mostra_interfaccia_correzione(client, types):
                         config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.3)
                     )
                     
-                    # Convertiamo l'output del markdown per evidenziare i blocchi in grassetto
                     analisi_risultato = risposta.text
-                    risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', analisi_risultato)
+                    
+                    # Parsing per estrarre dinamicamente Nome Alunno e Traccia dal testo generato dall'AI
+                    match_studente = re.search(r'(?i)STUDENTE:\s*(.*)', analisi_risultato)
+                    match_traccia = re.search(r'(?i)TRACCIA RILEVATA:\s*(.*)', analisi_risultato)
+                    
+                    nome_alunno = match_studente.group(1).strip() if match_studente else "Non rilevato dal foglio"
+                    traccia_rilevata = match_traccia.group(1).strip() if match_traccia else "Non rilevata dal foglio"
+                    
+                    # Pulizia dei tag di servizio dal testo della correzione per l'anteprima pulita
+                    corpo_correzione = re.sub(r'(?i)STUDENTE:.*?\n', '', analisi_risultato, count=1)
+                    corpo_correzione = re.sub(r'(?i)TRACCIA RILEVATA:.*?\n', '', corpo_correzione, count=1)
+                    
+                    risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', corpo_correzione)
                     
                     st.success("✅ Analisi completata con successo!")
-                    
                     st.markdown("<h3>📝 Esito della Correzione Docente</h3>", unsafe_allow_html=True)
                     
-                    # Genera la visualizzazione strutturata usando .foglio-word e .box-valutazione coerenti con il tuo CSS
+                    # Visualizzazione strutturata nel foglio-word
                     st.markdown(f"""
                     <div class="foglio-word">
                         <table class="tabella-intestazione">
@@ -268,7 +273,7 @@ def mostra_interfaccia_correzione(client, types):
                         </table>
                         <div class="box-valutazione">
                             <h4>📋 VERBALE DI VALUTAZIONE DIRETTA</h4>
-                            <p><strong>Traccia Esaminata:</strong> {traccia}</p>
+                            <p><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
                         </div>
                         <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{risultato_f}</div>
                     </div>
@@ -277,7 +282,7 @@ def mostra_interfaccia_correzione(client, types):
                     st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
                     st.markdown("<h4 style='margin-top:0; font-family:sans-serif;'>📦 Esporta Verbale di Valutazione</h4>", unsafe_allow_html=True)
                     
-                    pdf_valutazione = genera_pdf_valutazione(nome_alunno, traccia, analisi_risultato)
+                    pdf_valutazione = genera_pdf_valutazione(nome_alunno, traccia_rilevata, corpo_correzione)
                     st.download_button(
                         label="📄 SCARICA VALUTAZIONE IN PDF",
                         data=pdf_valutazione,
@@ -346,7 +351,6 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg = re.sub(r'\*\*(.*?)\*\*|\*(.*?)\*', r'<b>\1\2</b>', tg.strip())
         dom, sol = tg.split("[SOLUZIONI]") if "[SOLUZIONI]" in tg else (tg, "Nessuna chiave di correzione.")
         
-        # Genera l'intestazione coordinata con la tabella richiesta dal tuo foglio CSS
         i_html = f"""
         <table class='tabella-intestazione'>
             <tr>

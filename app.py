@@ -4,7 +4,7 @@ import json
 import re
 import time
 import io
-import jwt  # Ricorda di aggiungere PyJWT al tuo ambiente o requirements.txt
+import jwt  # Gestito tramite PyJWT nel file requirements.txt
 from streamlit_oauth import OAuth2Component
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -33,7 +33,7 @@ carica_css("stile.css", st.session_state["tema_scelto"])
 
 # --- CONTROLLI DI SICUREZZA API E SDK ---
 if "GEMINI_KEY" not in st.secrets: 
-    st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets.")
+    st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
 
 try:
@@ -89,17 +89,19 @@ if not st.session_state["autenticato"]:
             email_utente = payload.get("email", "").lower().strip()
             nome_utente = payload.get("name", "Docente")
             
-            # Controllo di sicurezza: verifichiamo il finale della mail
-            if email_utente.endswith(f"@{DOMINIO_SCUOLA}"):
+            # --- TUA EMAIL SUPER-ADMIN + BLOCCO DOMINIO SCUOLA ---
+            MIA_EMAIL = "carloperrone011@gmail.com"
+            
+            if email_utente == MIA_EMAIL or email_utente.endswith(f"@{DOMINIO_SCUOLA}"):
                 st.session_state["autenticato"] = True
                 st.session_state["info_utente"] = {"email": email_utente, "nome": nome_utente}
                 st.success(f"Benvenuto Prof. {nome_utente}!")
                 time.sleep(1)
                 st.rerun()
             else:
-                st.error(f"❌ Accesso negato. Devi utilizzare l'account istituzionale @{DOMINIO_SCUOLA}")
+                st.error(f"❌ Accesso negato. L'account {email_utente} non è autorizzato per questa piattaforma.")
         except Exception as e:
-            st.error(f"Errore durante la lettura dei dati di login: {e}")
+            st.error(f"Errore durante la decodifica del login: {e}")
             
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -263,15 +265,13 @@ def mostra_interfaccia_correzione(client, types):
             st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
         else:
             with st.spinner("Il docente AI sta leggendo ed esaminando l'immagine dell'elaborato..."):
-                sys_p = (
-                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito.\n"
-                    "Istruzioni tassative di formattazione dell'output:\n"
-                    "1. Trova e leggi il nome dello studente scritto sul foglio. Inizia il testo ESATTAMENTE con la riga: 'STUDENTE: [Nome Rilevato]'\n"
-                    "2. Trova e capisci l'argomento o la traccia della domanda. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia o Argomento Rilevato]'\n"
-                    "3. Procedi con l'analisi: trascrivi brevemente il testo se scritto a mano, trova gli errori ortografici, logici o matematici e commentali dettagliatamente.\n"
-                    "4. Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' "
-                    "con una valutazione espressa in decimi (es. VOTO FINALE: 7/10) motivandola brevemente."
-                )
+                sys_p = """Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito.
+Istruzioni tassative di formattazione dell'output:
+1. Trova e leggi il nome dello studente scritto sul foglio. Inizia il testo ESATTAMENTE con la riga: 'STUDENTE: [Nome Rilevato]'
+2. Trova e capisci l'argomento o la traccia della domanda. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia o Argomento Rilevato]'
+3. Procedi con l'analisi: trascrivi brevemente il testo se scritto a mano, trova gli errori ortografici, logici o matematici e commentali dettagliatamente.
+4. Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' con una valutazione espressa in decimi (es. VOTO FINALE: 7/10) motivandola brevemente."""
+                
                 contenuto_prompt = "Analizza l'immagine allegata. Estrai il nome dello studente, la traccia/argomento, correggi tutti gli errori ed esprimi il voto finale."
                 
                 try:
@@ -316,7 +316,7 @@ def mostra_interfaccia_correzione(client, types):
                             <h4>📋 VERBALE DI VALUTAZIONE DIRETTA</h4>
                             <p><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
                         </div>
-                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{risultato_f}</div>
+                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{resultado_f}</div>
                     </div>
                     """, unsafe_allow_html=True)
                     

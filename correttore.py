@@ -6,6 +6,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
 def genera_pdf_verifica(argomento, difficolta, testo_corpo):
+    """Genera il file PDF nativo con la formattazione grafica per gli studenti."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
     story = []
@@ -23,7 +24,7 @@ def genera_pdf_verifica(argomento, difficolta, testo_corpo):
         [Paragraph(f"Verifica Scritta Valutativa ({difficolta})", stile_titolo_l), Paragraph(f"Materia/Oggetto: {argomento}", stile_titolo_r)]
     ]
     
-    tabella = Table(dati_tabella, colWidths=[350, 154])
+    tabella = Table(dati_tabella, colWidths=[300, 204])
     tabella.setStyle(TableStyle([
         ('LINEBELOW', (0, 2), (1, 2), 1.5, colors.HexColor('#0f172a')),
         ('BOTTOMPADDING', (0, 0), (1, 2), 8),
@@ -49,6 +50,7 @@ def genera_pdf_verifica(argomento, difficolta, testo_corpo):
     return buffer.getvalue()
 
 def genera_pdf_soluzioni(argomento, testo_soluzioni):
+    """Genera il file PDF nativo con la chiave di correzione per il docente."""
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
     story = []
@@ -75,7 +77,8 @@ def genera_pdf_soluzioni(argomento, testo_soluzioni):
     return buffer.getvalue()
 
 def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_html, testo_domande, testo_soluzioni):
-    st.markdown("<br><h3 style='color: #f8fafc;'>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
+    """Mostra la bellissima anteprima a schermo ed espone i pulsanti per il download immediato dei PDF."""
+    st.markdown("<br><h3 class='titolo-anteprima'>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
     st.markdown(f"""
     <div class="foglio-word">
         {intestazione_html}
@@ -84,8 +87,8 @@ def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_ht
     """, unsafe_allow_html=True)
     
     st.markdown("<br>", unsafe_allow_html=True)
-    st.markdown("<div style='background-color: rgba(255,255,255,0.03); padding: 30px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='margin-top:0; color:#f8fafc; font-family:sans-serif;'>📦 Download File d'Esame Nativi in PDF</h4>", unsafe_allow_html=True)
+    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
+    st.markdown("<h4 style='margin-top:0; font-family:sans-serif;'>📦 Download File d'Esame Nativi in PDF</h4>", unsafe_allow_html=True)
     
     col1, col2 = st.columns(2)
     with col1:
@@ -110,33 +113,82 @@ def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_ht
         )
     st.markdown("</div>", unsafe_allow_html=True)
 
-def mostra_interfaccia_correzione(client, types):
-    st.title("🔍 Assistente AI alla Correzione")
-    st.markdown("<p style='color: #94a3b8; margin-top: -15px;'>Incolla il testo del compito consegnato dall'alunno per ricevere l'analisi degli errori e la proposta di voto.</p>", unsafe_allow_html=True)
+
+# ==========================================================================
+# 🔍 SEZIONE NUOVA: ASSISTENTE CORREZIONE MULTIMODALE CON EXPORT PDF
+# ==========================================================================
+
+def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
+    """Genera un PDF formattato con i risultati della correzione e il voto."""
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
+    story = []
+    styles = getSampleStyleSheet()
     
-    st.markdown("<div style='background-color: rgba(255,255,255,0.02); padding: 25px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.08); margin-bottom: 20px;'>", unsafe_allow_html=True)
-    traccia = st.text_input("Traccia dell'Esercizio o Testo della Domanda:", placeholder="Es. Descrivi il concetto di inconscio per Sigmund Freud...")
-    testo_alunno = st.text_area("Trascrizione dello Svolgimento dell'Alunno:", height=220, placeholder="Incolla qui la risposta scritta dallo studente...")
+    stile_testo = ParagraphStyle('ValNormale', parent=styles['Normal'], fontName='Times-Roman', fontSize=11, leading=16)
+    stile_titolo = ParagraphStyle('ValTitolo', fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#0f172a'))
+    stile_sezione = ParagraphStyle('ValSez', fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b'), spaceBefore=10)
+    
+    story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — EDULOGIC", stile_titolo))
+    story.append(Spacer(1, 15))
+    
+    story.append(Paragraph(f"<b>Studente/Alunno:</b> {nome_alunno}", stile_testo))
+    story.append(Paragraph(f"<b>Traccia/Obiettivo:</b> {traccia}", stile_testo))
+    story.append(Spacer(1, 10))
+    story.append(Paragraph("📋 ESITO DELLA CORREZIONE E DETTAGLI:", stile_sezione))
+    story.append(Spacer(1, 5))
+    
+    for linea in analisi_testo.split('\n'):
+        linea = linea.strip()
+        if linea:
+            linea_f = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', linea)
+            linea_f = re.sub(r'\*(.*?)\*', r'<b>\1</b>', linea_f)
+            story.append(Paragraph(linea_f, stile_testo))
+            story.append(Spacer(1, 6))
+        else:
+            story.append(Spacer(1, 8))
+            
+    doc.build(story)
+    buffer.seek(0)
+    return buffer.getvalue()
+
+def mostra_interfaccia_correzione(client, types):
+    """Gestisce l'interfaccia di acquisizione (foto/caricamento) e correzione dei compiti."""
+    st.title("🔍 Assistente AI alla Correzione")
+    st.markdown("<p style='color: #cbd5e1 !important;'>Compila i dati dell'alunno, acquisisci lo svolgimento tramite fotocamera o file e ricevi la correzione automatica.</p>", unsafe_allow_html=True)
+    
+    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
+    nome_alunno = st.text_input("Nome e Cognome dell'Alunno:", placeholder="Es. Mario Rossi")
+    traccia = st.text_input("Traccia dell'Esercizio o Testo della Domanda:", placeholder="Es. Spiega la teoria della relatività o risolvi il quesito...")
     st.markdown("</div>", unsafe_allow_html=True)
     
-    if st.button("🚀 Elabora ed Evidenzia Errori", type="primary"):
-        if not traccia or not testo_alunno:
-            st.error("Compila sia la traccia dell'esercizio che lo svolgimento scritto dall'alunno!")
+    st.markdown("<h4>📷 Acquisizione Elaborato (Scatta Foto o Carica Immagine)</h4>", unsafe_allow_html=True)
+    
+    # Due opzioni di caricamento comode affiancate
+    tab_carica, tab_scatta = st.tabs(["📁 Carica File Immagine", "📸 Usa Fotocamera"])
+    file_immagine = None
+    
+    with tab_carica:
+        file_caricato = st.file_uploader("Seleziona l'immagine del compito:", type=["png", "jpg", "jpeg"])
+        if file_caricato:
+            file_immagine = file_caricato.read()
+            st.image(file_immagine, caption="Immagine caricata correttamente", width=300)
+            
+    with tab_scatta:
+        foto_scattata = st.camera_input("Inquadra il foglio del compito e scatta:")
+        if foto_scattata:
+            file_immagine = foto_scattata.read()
+            
+    if st.button("🚀 Elabora, Valuta ed Evidenzia Errori", type="primary", use_container_width=True):
+        if not nome_alunno:
+            st.error("Inserisci il nome dell'alunno prima di avviare l'analisi!")
+        elif not traccia:
+            st.error("Inserisci il testo della traccia originaria per permettere il confronto!")
+        elif not file_immagine:
+            st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
         else:
-            with st.spinner("Il docente AI sta analizzando il compito in base ai criteri ministeriali..."):
-                sys_p = "Sei un professore italiano severo ma giusto. Analizza il compito, evidenzia gli errori in modo professionale e fornisci un voto finale in decimi (es. 6½, 7, 8+)."
-                user_p = f"Traccia: {traccia}\nSvolgimento Alunno: {testo_alunno}\n\nFornisci errori dettagliati e voto."
-                
-                try:
-                    risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config={'system_instruction': sys_p, 'temperature': 0.3})
-                    st.session_state["analisi_correzione"] = risp.text
-                except Exception as e:
-                    st.error(f"Errore di rete durante la correzione: {e}")
-                    
-    if "analisi_correzione" in st.session_state:
-        st.markdown("<br><h3 style='color: #f8fafc;'>📝 Registro di Valutazione AI</h3>", unsafe_allow_html=True)
-        st.markdown(f"""
-        <div class="box-valutazione">
-            {st.session_state["analisi_correzione"].replace('\n', '<br>')}
-        </div>
-        """, unsafe_allow_html=True)
+            with st.spinner("Il docente AI sta analizzando l'immagine dell'elaborato..."):
+                # Prompt con istruzioni stringenti sul voto in decimi
+                sys_p = (
+                    "Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito. "
+                    "Trova gli errori ortografici, logici o matematici e commentali dettagliatamente. "

@@ -8,18 +8,18 @@
     100% { background-position: 0% 50%; }
 }
 
-/* 🌌 SFONDO BLU NOTTE PROFONDO CON GRIGLIA A PUNTINI INDACO */
+/* 🌌 SFONDO BLU SCURO REALE E PROFONDO CON GRIGLIA A PUNTINI */
 html, body, [data-testid="stAppViewContainer"], .stApp {
-    /* Gradiente impostato su variazioni di Blu Notte reale e profondo */
-    background: linear-gradient(-45deg, #020617, #070f2b, #0f172a, #03071e) !important;
+    /* Gradiente calibrato rigidamente sulle sfumature del Blu Scuro d'ufficio e dell'Oceano Notturno */
+    background: linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;
     background-size: 400% 400% !important;
     animation: gradienteScuro 20s ease infinite !important;
     
-    /* Griglia geometrica e puntini luminosi color indaco/blu elettrico */
+    /* Griglia geometrica e puntini luminosi color indaco/blu elettrico ad alta visibilità */
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.01) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.01) 1px, transparent 1px),
-        radial-gradient(rgba(99, 102, 241, 0.25) 1.5px, transparent 1.5px) !important;
+        radial-gradient(rgba(99, 102, 241, 0.3) 1.5px, transparent 1.5px) !important;
     background-size: 45px 45px, 45px 45px, 22px 22px !important;
     background-position: 0 0, 0 0, 11px 11px !important;
     background-attachment: fixed !important;
@@ -40,16 +40,16 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     color: #f8fafc !important;
 }
 
-/* 📥 BOX CONTENITORI OPZIONI (CARD SCURE BLU NOTTE) */
+/* 📥 BOX CONTENITORI OPZIONI (CARD SCURE BLU SCURO VETRO) */
 .box-parametri, [data-testid="stForm"] {
-    background-color: rgba(15, 23, 42, 0.6) !important; 
+    background-color: rgba(10, 25, 47, 0.6) !important; 
     padding: 25px; 
     border-radius: 8px; 
-    border: 1px solid rgba(99, 102, 241, 0.15); 
+    border: 1px solid rgba(99, 102, 241, 0.2); 
     margin-bottom: 25px;
 }
 
-/* 🔒 CASSE DI INPUT E TENDINE (SFONDO NOTTE / SCRITTA BIANCA) */
+/* 🔒 CASSE DI INPUT E TENDINE (SFONDO NOTTE SCURO / SCRITTA BIANCA) */
 div[data-baseweb="input"] input, 
 div[data-baseweb="select"] div, 
 .stTextArea textarea,
@@ -57,21 +57,21 @@ input,
 textarea {
     color: #ffffff !important;
     -webkit-text-fill-color: #ffffff !important;
-    background-color: #030712 !important;
+    background-color: #010a15 !important;
 }
 div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
-    background-color: #030712 !important;
+    background-color: #010a15 !important;
     border: 1px solid #1e293b !important;
     border-radius: 6px !important;
 }
 div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
-    background-color: #030712 !important;
+    background-color: #010a15 !important;
     color: #ffffff !important;
 }
 
 /* Sidebar stile vetro satinato scuro (Glassmorphism) */
 [data-testid="stSidebar"] {
-    background-color: rgba(2, 6, 23, 0.9) !important;
+    background-color: rgba(2, 12, 28, 0.9) !important;
     backdrop-filter: blur(25px) !important;
     -webkit-backdrop-filter: blur(25px) !important;
     border-right: 1px solid rgba(99, 102, 241, 0.1) !important;
@@ -80,14 +80,14 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     color: #f8fafc !important;
 }
 
-/* 🔒 BOX DI LOGIN COMPLETAMENTE SCURO BLU NOTTE */
+/* 🔒 BOX DI LOGIN COMPLETAMENTE SCURO BLU MINISTERIALE */
 .box-login {
     max-width: 500px; 
     margin: 80px auto; 
     padding: 40px; 
-    background: rgba(7, 15, 43, 0.7) !important; 
+    background: rgba(10, 25, 47, 0.75) !important; 
     backdrop-filter: blur(16px) !important;
-    border: 1px solid rgba(99, 102, 241, 0.2);
+    border: 1px solid rgba(99, 102, 241, 0.25);
     border-radius: 12px; 
     box-shadow: 0 20px 50px rgba(0,0,0,0.6);
 }
@@ -95,20 +95,20 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     color: #f8fafc !important;
 }
 .box-login div[data-baseweb="input"], .box-login input {
-    background-color: #030712 !important;
+    background-color: #010a15 !important;
     color: #ffffff !important;
     border: 1px solid #1e293b !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE TRASFORMATO IN UN ELEGANTE ARDESIA NOTTE SCURO */
+/* 📝 FOGLIO WORD TRASFORMATO IN UN ELEGANTE ARDESIA BLU SCURO */
 .foglio-word { 
-    background-color: rgba(11, 19, 43, 0.75) !important; 
+    background-color: rgba(14, 28, 54, 0.8) !important; 
     backdrop-filter: blur(10px) !important;
     padding: 55px 70px !important; 
     margin: 25px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.7), 0px 0px 40px rgba(99, 102, 241, 0.2) !important; 
-    border: 1px solid rgba(99, 102, 241, 0.15) !important; 
+    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.7), 0px 0px 40px rgba(99, 102, 241, 0.25) !important; 
+    border: 1px solid rgba(99, 102, 241, 0.2) !important; 
     border-radius: 10px !important;
 }
 
@@ -133,10 +133,10 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     margin-bottom: 35px !important; 
 }
 
-/* 📋 BOX VALUTAZIONE AI CORREZIONE IN VERSIONE SCURA CON BORDO ROSSO */
+/* 📋 BOX VALUTAZIONE AI CORREZIONE IN VERSIONE BLU SCURA CON BORDO ROSSO */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
-    background-color: rgba(15, 23, 42, 0.8) !important; 
+    background-color: rgba(10, 25, 47, 0.85) !important; 
     padding: 22px 28px !important; 
     margin: 25px 0 !important; 
     border-radius: 8px !important; 
@@ -154,7 +154,7 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     text-shadow: none !important;
 }
 
-/* 🖨️ PULSANTI DI AZIONE COLORATI (STACCO VIVACE DAL BLU NOTTE) */
+/* 🖨️ PULSANTI DI AZIONE COLORATI (STACCO VIVACE DAL BLU SCURO) */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
@@ -167,7 +167,7 @@ div.stButton > button {
 
 /* 🟡 PULSANTE PRINCIPALE (PRIMARY): AMBRA / ORO VIVACE */
 div.stButton > button[data-testid="baseButton-primary"] {
-    background-color: #f59e0b !important; /* Oro ambrato */
+    background-color: #f59e0b !important;
 }
 div.stButton > button[data-testid="baseButton-primary"], div.stButton > button[data-testid="baseButton-primary"] * {
     color: #020617 !important;
@@ -176,12 +176,12 @@ div.stButton > button[data-testid="baseButton-primary"], div.stButton > button[d
 div.stButton > button[data-testid="baseButton-primary"]:hover {
     transform: translateY(-2px) !important;
     background-color: #d97706 !important;
-    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.4) !important;
+    box-shadow: 0 8px 25px rgba(245, 158, 11, 0.5) !important;
 }
 
 /* 🔵 PULSANTE SECONDARIO (SECONDARY): INDACO / BLU LUMINOSO CYBER */
 div.stButton > button[data-testid="baseButton-secondary"] {
-    background-color: #4f46e5 !important; /* Indaco vivido */
+    background-color: #4f46e5 !important;
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
 }
 div.stButton > button[data-testid="baseButton-secondary"], div.stButton > button[data-testid="baseButton-secondary"] * {
@@ -191,7 +191,7 @@ div.stButton > button[data-testid="baseButton-secondary"], div.stButton > button
 div.stButton > button[data-testid="baseButton-secondary"]:hover {
     transform: translateY(-2px) !important;
     background-color: #4338ca !important;
-    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.5) !important;
 }
 
 /* Rende trasparenti i contenitori verticali nativi di Streamlit */

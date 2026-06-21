@@ -33,34 +33,37 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     padding-top: 2rem !important;
 }
 
-/* 📝 COLORI DEI TITOLI DELLA PLANCIA PRINCIPALE (CHIARO) */
-.main h1, .main h2, .main h3, .main h4, .main p, .main span, .main label p {
+/* 📝 FORZATURA GENERALE DI TUTTI I TESTI DEL SITO IN BIANCO LUMINOSO */
+.main h1, .main h2, .main h3, .main h4, .main p, .main span, .main label, .main label p, .stMarkdown p {
     color: #f8fafc !important;
 }
 
-/* 📥 BOX CONTENITORI OPZIONI (CARD) */
+/* 📥 BOX CONTENITORI OPZIONI (CARD SCURE VETRO) */
 .box-parametri, [data-testid="stForm"] {
-    background-color: rgba(255, 255, 255, 0.02) !important; 
+    background-color: rgba(30, 41, 59, 0.4) !important; 
     padding: 25px; 
     border-radius: 8px; 
     border: 1px solid rgba(255, 255, 255, 0.08); 
     margin-bottom: 25px;
 }
 
-/* 🔒 FORZATURA TESTO INPUT E TENDINE (SFONDO SCURO / SCRITTA BIANCA) */
+/* 🔒 CASSE DI INPUT E TENDINE (SFONDO SCURO NOTTE / SCRITTA BIANCA) */
 div[data-baseweb="input"] input, 
 div[data-baseweb="select"] div, 
-.stTextArea textarea {
+.stTextArea textarea,
+input,
+textarea {
     color: #ffffff !important;
-    background-color: #0f172a !important;
+    -webkit-text-fill-color: #ffffff !important;
+    background-color: #0b0f19 !important;
 }
 div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
-    background-color: #0f172a !important;
+    background-color: #0b0f19 !important;
     border: 1px solid #334155 !important;
     border-radius: 6px !important;
 }
 div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
-    background-color: #0f172a !important;
+    background-color: #0b0f19 !important;
     color: #ffffff !important;
 }
 
@@ -75,33 +78,39 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
     color: #f8fafc !important;
 }
 
-/* 🔒 BOX DI LOGIN (BIANCO CON TESTO SCURO PER MASSIMA REGGIBILITÀ) */
+/* 🔒 BOX DI LOGIN COMPLETAMENTE SCURO */
 .box-login {
     max-width: 500px; 
     margin: 80px auto; 
     padding: 40px; 
-    background: #ffffff !important; 
+    background: rgba(15, 23, 42, 0.6) !important; 
+    backdrop-filter: blur(16px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 12px; 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+    box-shadow: 0 20px 50px rgba(0,0,0,0.5);
 }
-.box-login *, .box-login h2, .box-login p, .box-login label {
-    color: #1e293b !important;
+.box-login h2, .box-login p {
+    color: #f8fafc !important;
 }
 .box-login div[data-baseweb="input"], .box-login input {
-    background-color: #f8fafc !important;
-    color: #1e293b !important;
-    border: 1px solid #cbd5e1 !important;
+    background-color: #0b0f19 !important;
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE (BIANCO CON TESTO NERO) */
+/* 📝 FOGLIO WORD MINISTERIALE TRASFORMATO IN DARK MODE ELEGANTED */
 .foglio-word { 
-    background-color: #ffffff !important; 
+    background-color: rgba(15, 23, 42, 0.7) !important; 
+    backdrop-filter: blur(10px) !important;
     padding: 55px 70px !important; 
     margin: 25px auto !important; 
     max-width: 850px !important; 
-    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.8) !important; 
-    border-radius: 8px !important;
+    box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.6), 0px 0px 40px rgba(99, 102, 241, 0.15) !important; 
+    border: 1px solid rgba(255, 255, 255, 0.1) !important; 
+    border-radius: 10px !important;
 }
+
+/* Forza i testi della verifica a diventare bianchi/indaco invece che neri */
 .foglio-word, 
 .foglio-word *, 
 .tabella-intestazione, 
@@ -110,24 +119,26 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
 .foglio-word b, 
 .foglio-word p, 
 .foglio-word span {
-    color: #1e293b !important;
+    color: #e2e8f0 !important;
+    -webkit-text-fill-color: #e2e8f0 !important;
     font-family: 'Times New Roman', Times, serif !important;
     text-shadow: none !important;
 }
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
-    border-bottom: 2px solid #0f172a !important; 
+    border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important; 
     margin-bottom: 35px !important; 
 }
 
-/* 📋 BOX VALUTAZIONE CORREZIONE COMPITI (Sfondo Bianco con Scritta Nera) */
+/* 📋 BOX VALUTAZIONE AI CORREZIONE IN VERSIONE DARK MODERNA */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
-    background-color: #ffffff !important; 
+    background-color: rgba(30, 41, 59, 0.5) !important; 
     padding: 22px 28px !important; 
     margin: 25px 0 !important; 
     border-radius: 8px !important; 
+    border: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.5) !important;
 }
 .box-valutazione, 
@@ -135,12 +146,12 @@ div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
 .box-valutazione p, 
 .box-valutazione span, 
 .box-valutazione div {
-    color: #1e293b !important;
+    color: #f1f5f9 !important;
+    -webkit-text-fill-color: #f1f5f9 !important;
     font-family: 'Inter', sans-serif !important;
-    text-shadow: none !important;
 }
 
-/* 🖨️ PULSANTI ORO CON TESTO SCURO SCELTI PER LA PLANCIA */
+/* 🖨️ PULSANTI ORO INTELLIGENTI CON TESTO SCURO PER MASSIMO CONTRASTO */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
@@ -153,13 +164,15 @@ div.stButton > button {
 }
 div.stButton > button, div.stButton > button * {
     color: #020617 !important;
+    -webkit-text-fill-color: #020617 !important;
 }
 div.stButton > button:hover {
     transform: translateY(-2px) !important;
     background-color: #f59e0b !important;
+    box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
 }
 
-/* Svuota contenitori nativi verticali di Streamlit */
+/* Rende trasparenti i contenitori verticali nativi di Streamlit */
 [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
     background-color: transparent !important;
     background: transparent !important;

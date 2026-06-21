@@ -8,7 +8,7 @@
     100% { background-position: 0% 50%; }
 }
 
-/* 🌌 SFONDO SFIZIOSO E FORZATO SUI LIVELLI DI ELEMENTI DI STREAMLIT */
+/* 🌌 SFONDO INTEGRATO SULLA PIATTAFORMA STREAMLIT */
 html, body, [data-testid="stAppViewContainer"], .stApp {
     background: linear-gradient(-45deg, #070a12, #14113c, #0a0f1d, #01030a) !important;
     background-size: 400% 400% !important;
@@ -23,49 +23,49 @@ html, body, [data-testid="stAppViewContainer"], .stApp {
     background-attachment: fixed !important;
 }
 
-/* 🎨 LEGGIBILITÀ DI BASE: FORZATURA TESTI GENERALI DEL SITO IN BIANCO NITIDO */
-h1, h2, h3, h4, h5, h6, p, span, li, label, div {
-    color: #f8fafc !important;
-}
-
-/* Specifico per le scritte sopra i controlli (es. "Argomento Didattico", "Numero domande") */
-.stWidgetForm label, .stTextInput label, .stSelectbox label, .stSlider label, label p {
-    color: #cbd5e1 !important;
-    font-weight: 600 !important;
-}
-
-/* 📥 SCATOLE DI INPUT, TENDINE E CAMPI DI TESTO (Scuro Elegante con Scritta Bianca) */
-div[data-baseweb="input"], div[data-baseweb="select"], .stSelectbox, .stTextInput input, .stTextArea textarea {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-    border: 1px solid #475569 !important;
-    border-radius: 6px !important;
-}
-input, textarea {
-    color: #ffffff !important;
-}
-
-/* Opzioni all'interno delle tendine quando si aprono */
-div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
-    background-color: #1e293b !important;
-    color: #ffffff !important;
-}
-
-/* Trasparenze per evitare blocchi neri nativi di Streamlit */
-[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
-    background-color: transparent !important;
-    background: transparent !important;
-}
-
-/* ❌ ELIMINAZIONE DELLA STRISCIA SUPERIORE */
-header, [data-testid="stHeader"] {
+/* ❌ ELIMINAZIONE DELLA STRISCIA SUPERIORE BIANCA NATIVA */
+header, [data-testid="stHeader"], [data-testid="stDecoration"] {
     display: none !important;
     visibility: hidden !important;
     height: 0px !important;
 }
-
 .main .block-container {
-    padding-top: 1.5rem !important;
+    padding-top: 2rem !important;
+}
+
+/* 📝 COLORI DEI TITOLI E DELLA PLANCIA PRINCIPALE */
+.main h1, .main h2, .main h3, .main p, .main span {
+    color: #f8fafc !important;
+}
+
+/* Etichette staccate sopra i controlli (es. "Argomento Didattico") */
+[data-testid="stWidgetForm"] label p, 
+[data-testid="stTextInput"] label p, 
+[data-testid="stSelectbox"] label p, 
+[data-testid="stSlider"] label p,
+.stMarkdown p {
+    color: #cbd5e1 !important;
+    font-weight: 600 !important;
+}
+
+/* 📥 CASSI DI DETTAGLIO, CAMPI DI TESTO E INPUT (Sfondo Scuro Vetro, Scritta Bianca) */
+div[data-baseweb="input"] input, 
+div[data-baseweb="select"] div, 
+.stTextArea textarea,
+input, 
+textarea {
+    color: #ffffff !important;
+    -webkit-text-fill-color: #ffffff !important;
+}
+div[data-baseweb="input"], div[data-baseweb="select"], .stTextArea textarea {
+    background-color: #1e293b !important;
+    border: 1px solid #475569 !important;
+    border-radius: 6px !important;
+}
+/* Tendine aperte */
+div[data-baseweb="popover"] *, ul[role="listbox"] li, div[role="option"] {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
 }
 
 /* Sidebar stile vetro satinato scuro (Glassmorphism) */
@@ -79,7 +79,7 @@ header, [data-testid="stHeader"] {
     color: #f8fafc !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE PREMIUM (Isolato in Bianco Carta Reale) */
+/* 📝 FOGLIO WORD MINISTERIALE PREMIUM (Isolato in Bianco Carta con Scritta Nera) */
 .foglio-word { 
     background-color: #ffffff !important; 
     padding: 55px 70px !important; 
@@ -90,7 +90,7 @@ header, [data-testid="stHeader"] {
     border-radius: 10px !important;
 }
 
-/* 🔒 BLOCCO RIGIDO: Forza tutti i testi dentro il foglio Word a rimanere NERI */
+/* Forza testo nero dentro il foglio Word */
 .foglio-word, 
 .foglio-word *, 
 .tabella-intestazione, 
@@ -100,19 +100,15 @@ header, [data-testid="stHeader"] {
 .foglio-word p, 
 .foglio-word span {
     color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
     font-family: 'Times New Roman', Times, serif !important;
     text-shadow: none !important;
 }
-
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
     border-bottom: 2px solid #0f172a !important; 
     margin-bottom: 35px !important; 
-}
-.tabella-intestazione td { 
-    border: none !important; 
-    padding: 8px 0 !important; 
 }
 
 /* 📋 BOX VALUTAZIONE CORREZIONE COMPITI (Sfondo Bianco con Scritta Nera) */
@@ -130,11 +126,12 @@ header, [data-testid="stHeader"] {
 .box-valutazione span, 
 .box-valutazione div {
     color: #1e293b !important;
+    -webkit-text-fill-color: #1e293b !important;
     font-family: 'Inter', sans-serif !important;
     text-shadow: none !important;
 }
 
-/* 🖨️ PULSANTI PREMIUM INTERFACCIA (Colore Oro/Giallo con Scritta Scura) */
+/* 🖨️ PULSANTI INTERFACCIA PREMIUM (Giallo/Oro con Scritta Scura) */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
@@ -145,17 +142,19 @@ div.stButton > button {
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
 }
-
-/* Forza il testo dell'etichetta del pulsante a essere scuro */
 div.stButton > button, div.stButton > button * {
     color: #0f172a !important;
+    -webkit-text-fill-color: #0f172a !important;
 }
-
 div.stButton > button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
     background-color: #f59e0b !important;
 }
 
-/* Nasconde gli elementi di branding predefiniti */
-#MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; display: none !important; }
+/* Svuota i riquadri trasparenti nativi */
+[data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
+    background-color: transparent !important;
+    background: transparent !important;
+}
+#MainMenu, footer { visibility: hidden; display: none !important; }

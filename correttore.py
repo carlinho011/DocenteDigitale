@@ -1,129 +1,126 @@
 import streamlit as st
-import re
 
-def converti_markdown_in_html(testo):
-    # Converte il grassetto markdown in tag HTML
-    testo_pulito = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', testo)
-    # Converte i punti elenco markdown in pallini grafici
-    testo_pulito = re.sub(r'^\s*\*\s+', r'• ', testo_pulito, flags=re.MULTILINE)
-    return testo_pulito
+def renderizza_documento_stampa(titolo, argomento, intestazione_html, domande_html, soluzioni_html):
+    """Mostra l'anteprima del compito e fornisce pulsanti separati per Stampa e Download PDF."""
+    
+    # MOSTRA SOLO LA VERIFICA NELL'ANTEPRIMA A SCHERMO
+    st.subheader("📝 Anteprima del Compito (per gli Studenti)")
+    st.markdown(f"""
+    <div class="foglio-word" id="sezione-domande">
+        {intestazione_html}
+        <div>{domande_html}</div>
+    </div>
+    """, unsafe_allow_html=True)
+    
+    st.markdown("---")
+    
+    # SEZIONE 1: SCARICAMENTO E STAMPA VERIFICA ALUNNI
+    st.subheader("🖨️ Opzioni Verifica Studenti")
+    col_a1, col_a2 = st.columns(2)
+    
+    with col_a1:
+        if st.button("🖨️ Apri Finestra di Stampa Compito", type="primary", use_container_width=True):
+            st.components.v1.html(f"""
+            <script>
+                var doc = window.open('', '_blank');
+                doc.document.write('<html><head><title>{titolo}</title><style>');
+                doc.document.write('.foglio-word {{ padding: 40px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}');
+                doc.document.write('.tabella-intestazione {{ width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px; }}');
+                doc.document.write('.tabella-intestazione td {{ padding: 6px 0; }}');
+                doc.document.write('</style></head><body>');
+                doc.document.write('<div class="foglio-word">{intestazione_html.replace("'", "\\\'")}{domande_html.replace("'", "\\\'")}</div>');
+                doc.document.write('</body></html>');
+                doc.document.close();
+                doc.print();
+            </script>
+            """, height=0)
 
-# AGGIORNATO: Aggiunto colore_tema come quinto parametro opzionale per evitare il TypeError
-def renderizza_documento_stampa(titolo, info_scuola_html, voto_html, corpo_testo_html, colore_tema="#0288d1"):
-    blocco_stampa_iframe = f"""
-    <div style='margin-bottom:15px;'>
-        <button onclick='window.print()' style='background-color:{colore_tema};color:white;padding:12px 24px;border:none;border-radius:6px;cursor:pointer;font-size:15px;font-weight:bold;box-shadow:0 3px 5px rgba(0,0,0,0.1);'>
-            📥 Scarica / Stampa PDF della Correzione
-        </button>
-    </div>
-    <div style='background-color:#ffffff;color:#000000;padding:40px;font-family:"Times New Roman",serif;line-height:1.6;font-size:16px;border:1px solid #d3d3d3;max-width:800px;margin:0 auto;'>
-        {info_scuola_html}
-        <h1 style='text-align:center;font-size:22px;margin-top:10px;margin-bottom:5px;'>{titolo}</h1>
-        {voto_html}
-        <br>
-        <div>{corpo_testo_html}</div>
-    </div>
-    <style>
-        @media print {{ 
-            button {{ display: none !important; }} 
-            body {{ background-color: #ffffff !important; padding: 0 !important; }} 
-        }}
-    </style>
-    """
-    st.components.v1.html(blocco_stampa_iframe, height=1000, scrolling=True)
+    with col_a2:
+        # Crea un file HTML scaricabile che esegue l'auto-stampa in PDF all'apertura
+        html_alunni_download = f"""<html><head><title>{titolo}</title><style>
+        .foglio-word {{ padding: 50px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}
+        .tabella-intestazione {{ width: 100%; border-collapse: collapse; border-bottom: 2px solid #000; margin-bottom: 25px; font-family: Arial, sans-serif; font-size: 14px; }}
+        .tabella-intestazione td {{ padding: 6px 0; }}
+        </style></head><body onload="window.print();">
+        <div class="foglio-word">{intestazione_html}{domande_html}</div>
+        </body></html>"""
+        
+        st.download_button(
+            label="💾 Scarica PDF Verifica (.html)",
+            data=html_alunni_download,
+            file_name=f"Verifica_{argomento.replace(' ', '_')}.html",
+            mime="text/html",
+            use_container_width=True
+        )
+
+    st.markdown("---")
+
+    # SEZIONE 2: SCARICAMENTO E STAMPA CHIAVE DI CORREZIONE
+    st.subheader("🔑 Opzioni Chiave di Correzione (Risposte)")
+    col_s1, col_s2 = st.columns(2)
+    
+    with col_s1:
+        if st.button("🖨️ Apri Finestra di Stampa Soluzioni", type="secondary", use_container_width=True):
+            st.components.v1.html(f"""
+            <script>
+                var doc = window.open('', '_blank');
+                doc.document.write('<html><head><title>Soluzioni - {argomento}</title><style>');
+                doc.document.write('.foglio-word {{ padding: 40px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}');
+                doc.document.write('h3 {{ color: #bf1515; font-family: Arial, sans-serif; border-bottom: 2px dashed #bf1515; padding-bottom: 10px; }}');
+                doc.document.write('</style></head><body>');
+                doc.document.write('<div class="foglio-word"><h3>🔑 CHIAVE DI CORREZIONE: {argomento.replace("'", "\\\'")}</h3><br>{soluzioni_html.replace("'", "\\\'")}</div>');
+                doc.document.write('</body></html>');
+                doc.document.close();
+                doc.print();
+            </script>
+            """, height=0)
+
+    with col_s2:
+        # File delle risposte scaricabile con comando auto-stampa incorporato
+        html_soluzioni_download = f"""<html><head><title>Soluzioni - {argomento}</title><style>
+        .foglio-word {{ padding: 50px; font-family: "Times New Roman", serif; line-height: 1.6; font-size: 16px; }}
+        h3 {{ color: #bf1515; font-family: Arial, sans-serif; border-bottom: 2px dashed #bf1515; padding-bottom: 10px; }}
+        </style></head><body onload="window.print();">
+        <div class="foglio-word"><h3>🔑 CHIAVE DI CORREZIONE: {argomento}</h3><br>{soluzioni_html}</div>
+        </body></html>"""
+        
+        st.download_button(
+            label="💾 Scarica PDF Soluzioni (.html)",
+            data=html_soluzioni_download,
+            file_name=f"Soluzioni_{argomento.replace(' ', '_')}.html",
+            mime="text/html",
+            use_container_width=True
+        )
 
 def mostra_interfaccia_correzione(client, types):
-    st.header("🔍 Valutazione dello Studente")
+    """Gestisce la sezione di scansione, correzione e valutazione dei compiti."""
+    st.header("Scansione e Correzione AI")
     
-    col1, col2 = st.columns(2)
-    with col1: nome_alunno = st.text_input("Alunno/a:", placeholder="Nome dello studente")
-    with col2: arg_compito = st.text_input("Materia/Argomento:", placeholder="Es. Storia del Novecento")
+    traccia = st.text_input("Traccia/Obiettivo dell'esercizio:", placeholder="Es. Risolvi la seguente equazione...")
+    testo_alunno = st.text_area("Testo o trascrizione del compito dell'alunno:", height=200)
     
-    testo_m = st.text_area("✍️ Incolla qui l'elaborato svolto:", height=180)
-    file_c = st.file_uploader("📂 Oppure carica foto/PDF dell'elaborato:", type=["png", "jpg", "jpeg", "pdf"])
-
-    if st.button("🔎 Avvia Valutazione Formativa"):
-        if not nome_alunno or not arg_compito:
-            st.error("Inserisci il nome dell'alunno e la materia!")
-        elif not testo_m and not file_c:
-            st.error("Inserisci l'elaborato da analizzare!")
+    if st.button("Avvia Correzione"):
+        if not traccia or not testo_alunno:
+            st.error("Inserisci sia la traccia che il testo dell'alunno!")
         else:
-            with st.spinner("Analisi delle competenze in corso..."):
-                sys_c = (
-                    "Sei un docente italiano esperto in valutazione formativa. "
-                    "Analizza la preparazione dello STUDENTE rivolgendoti a lui in seconda persona ('Tu'). "
-                    "Stabilisci tu autonomamente i criteri accademici ideali per l'argomento.\n\n"
-                    
-                    "La struttura della tua risposta deve essere RIGIDAMENTE questa:\n"
-                    "Inizia la primissima riga scrivendo ESATTAMENTE: VOTO: X/10\n"
-                    "Nella seconda riga scrivi un profilo riassuntivo dello studente (es. 'Studente preparato ma frettoloso...').\n"
-                    "Lascia una riga vuota e organizza il resto della risposta ESATTAMENTE in queste macro-aree visive utilizzando queste precise intestazioni:\n\n"
-                    
-                    "🟢 LE TUE COMPETENZE ACQUISITE\n"
-                    "(Evidenzia qui cosa lo studente ha capito, le sue abilità logiche e i suoi punti di forza personali)\n\n"
-                    
-                    "📝 REVISIONE DELL'ELABORATO PASSO-PASSO\n"
-                    "Cita i passaggi dello studente valutandoli così:\n"
-                    "- ✅ '[Frase dello studente]' -> Risposta esatta.\n"
-                    "- ❌ '[Frase errata dello studente]' \n"
-                    "  👉 Risposta giusta: [Versione corretta e sintetica].\n\n"
-                    
-                    "🔴 LE TUE LACUNE DA COLMARE\n"
-                    "ATTENZIONE: Inserisci questa intestazione e la relativa spiegazione SOLO SE lo studente ha commesso errori reali o se il voto è inferiore a 10/10. Se non ci sono lacune significative, salta completamente questa sezione e questa intestazione.\n\n"
-                    
-                    "🚀 IL TUO PIANO DI MIGLIORAMENTO\n"
-                    "Fornisci un consiglio pratico di massimo due righe, estremamente breve, per il futuro metodo di studio."
-                )
-                
-                contenuto_input = [f"Studente da valutare: {nome_alunno}\nAmbito didattico: {arg_compito}\n\nElaborato prodotto:\n"]
-                if testo_m: contenuto_input.append(testo_m)
-                if file_c:
-                    m_type = "application/pdf" if file_c.name.endswith(".pdf") else "image/jpeg"
-                    contenuto_input.append(types.Part.from_bytes(data=file_c.getvalue(), mime_type=m_type))
+            with st.spinner("Analisi e correzione in corso..."):
+                sys_p = "Sei un professore italiano severo ma giusto. Analizza il compito, evidenzia gli errori in rosso e fornisci un voto finale in decimi (es. 6½, 7, 8+)."
+                user_p = f"Traccia: {traccia}\nSvolgimento Alunno: {testo_alunno}\n\nFornisci errori dettagliati e voto."
                 
                 try:
-                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
+                    risp = client.models.generate_content(
+                        model='gemini-2.5-flash', 
+                        contents=user_p, 
+                        config={'system_instruction': sys_p, 'temperature': 0.3}
+                    )
                     st.session_state["analisi_correzione"] = risp.text
-                    st.success("Valutazione completata!")
-                except Exception:
-                    try:
-                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=contenuto_input, config={'system_instruction': sys_c, 'temperature': 0.3})
-                        st.session_state["analisi_correzione"] = risp.text
-                        st.success("Valutazione completata!")
-                    except Exception as e:
-                        st.error(f"Errore di connessione: {e}")
-
+                except Exception as e:
+                    st.error(f"Errore durante la correzione: {e}")
+                    
     if "analisi_correzione" in st.session_state:
-        cx = st.session_state["analisi_correzione"]
-        linee = [l.strip() for l in cx.split("\n") if l.strip()]
-        
-        voto_rilevato = "N/D"
-        profilo_studente = ""
-        corpo_linee = []
-        
-        for l in linee:
-            if l.upper().startswith("VOTO:"):
-                voto_rilevato = l.replace("VOTO:", "").replace("Voto:", "").strip()
-            elif not profilo_studente and voto_rilevato != "N/D":
-                profilo_studente = l
-            else:
-                corpo_linee.append(l)
-                
-        corpo_testo = "\n\n".join(corpo_linee)
-        
-        # Sostituzione delle macro-aree con intestazioni HTML
-        corpo_testo = corpo_testo.replace("🟢 LE TUE COMPETENZE ACQUISITE", "<h3 style='color:#2e7d32; border-bottom:1px solid #2e7d32; padding-bottom:5px; margin-top:25px;'>🟢 Le Tue Competenze Acquisite</h3>")
-        corpo_testo = corpo_testo.replace("📝 REVISIONE DELL'ELABORATO PASSO-PASSO", "<h3 style='color:#0288d1; border-bottom:1px solid #0288d1; padding-bottom:5px; margin-top:25px;'>📝 Revisione dell'Elaborato Passo-Passo</h3>")
-        corpo_testo = corpo_testo.replace("🔴 LE TUE LACUNE DA COLMARE", "<h3 style='color:#c62828; border-bottom:1px solid #c62828; padding-bottom:5px; margin-top:25px;'>🔴 Le Tue Lacune da Colmare</h3>")
-        corpo_testo = corpo_testo.replace("🚀 IL TUO PIANO DI MIGLIORAMENTO", "<h3 style='color:#ef6c00; border-bottom:1px solid #ef6c00; padding-bottom:5px; margin-top:25px;'>🚀 Il Tuo Piano di Miglioramento</h3>")
-        
-        st.metric(label="Valutazione Finale", value=voto_rilevato)
-        
-        info_html = f"<div style='border-bottom:2px solid #000; padding-bottom:8px; font-family:Arial, sans-serif; font-size:14px;'><b>Studente:</b> {nome_alunno} <br> <b>Materia/Ambito:</b> {arg_compito}</div>"
-        voto_html = f"<div style='background-color:#f8f9fa; border:1px solid #0288d1; padding:15px; margin-top:15px; text-align:center; border-radius:4px;'><span style='font-size:22px; font-weight:bold; color:#0288d1;'>Esito: Voto {voto_rilevato}</span><br><p style='margin:5px 0 0 0; font-style:italic; color:#555;'><b>Profilo Studente:</b> {profilo_studente}</p></div>"
-        
-        # Convertiamo prima il markdown e applichiamo i break-line senza spezzare i tag HTML principali
-        corpo_html = converti_markdown_in_html(corpo_testo).replace('\n', '<br>')
-        
-        # La chiamata adesso è sicura e non genererà più l'errore a riga 107
-        renderizza_documento_stampa("SCHEDA DI VALUTAZIONE E REVISIONE", info_html, voto_html, corpo_html, "#2e7d32")
+        st.subheader("📝 Esito della Correzione")
+        st.markdown(f"""
+        <div class="box-valutazione">
+            {st.session_state["analisi_correzione"].replace('\n', '<br>')}
+        </div>
+        """, unsafe_allow_html=True)

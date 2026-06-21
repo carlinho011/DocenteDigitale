@@ -1,21 +1,19 @@
 /* Caricamento Font Inter di Google */
 @import url('https://googleapis.com');
 
-/* ✨ ANIMAZIONE RIGIDA PER LO SFONDO DINAMICO */
+/* ✨ ANIMAZIONE FLUIDA PER LO SFONDO DINAMICO */
 @keyframes gradienteDinamico {
     0% { background-position: 0% 50%; }
     50% { background-position: 100% 50%; }
     100% { background-position: 0% 50%; }
 }
 
-/* 🌌 FORCE OVERRIDE DELLO SFONDO SU TUTTI I LIVELLI DI STREAMLIT */
-html, body, [data-testid="stAppViewContainer"], .stApp, .st-emotion-cache-13ln4jf, .st-emotion-cache-bm2z3a {
-    /* Forzatura del gradiente animato a 4 colori */
+/* 🌌 SFONDO SFIZIOSO E FORZATO SUI LIVELLI DI ELEMENTI DI STREAMLIT */
+html, body, [data-testid="stAppViewContainer"], .stApp {
     background: linear-gradient(-45deg, #070a12, #14113c, #0a0f1d, #01030a) !important;
     background-size: 400% 400% !important;
     animation: gradienteDinamico 16s ease infinite !important;
     
-    /* Sovrapposizione del doppio pattern: Griglia geometrica + Punti di luce indaco */
     background-image: 
         linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
         linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px),
@@ -25,70 +23,91 @@ html, body, [data-testid="stAppViewContainer"], .stApp, .st-emotion-cache-13ln4j
     background-attachment: fixed !important;
 }
 
-/* Rende completamente trasparenti i blocchi intermedi per evitare quadrati bianchi */
+/* 🎨 CORREZIONE CONTRASTI E COLORI DEI TESTI DI STREAMLIT (LEGGIBILITÀ) */
+[data-testid="stAppViewContainer"] * {
+    color: #f8fafc; /* Forza tutti i testi normali a diventare bianchi/luminosi */
+}
+
+/* Specifico per etichette dei moduli (es. "Argomento Didattico", "Numero domande") */
+.stWidgetForm label, .stTextInput label, .stSelectbox label, .stSlider label, label p {
+    color: #cbd5e1 !important;
+    font-weight: 500 !important;
+}
+
+/* Riquadri di input testo, tendine e selettori (Sfondo scuro ma leggibile con testo bianco) */
+div[data-baseweb="input"], div[data-baseweb="select"], .stSelectbox, .stTextInput input, .stTextArea textarea {
+    background-color: #1e293b !important; /* Grigio ardesia scuro per i box */
+    color: #ffffff !important;
+    border: 1px solid #334155 !important;
+    border-radius: 6px !important;
+}
+
+/* Opzioni interne quando si apre un menu a tendina */
+ul[role="listbox"] li {
+    background-color: #1e293b !important;
+    color: #ffffff !important;
+}
+ul[role="listbox"] li:hover {
+    background-color: #334155 !important;
+}
+
+/* Trasparenze per evitare blocchi grigi/bianchi nativi */
 [data-testid="stVerticalBlock"], [data-testid="stVerticalBlockBorderWrapper"], .stHtmlBlock {
     background-color: transparent !important;
     background: transparent !important;
 }
 
-/* ❌ ELIMINAZIONE COMPLETA DELLA STRISCIA SUPERIORE */
-header, [data-testid="stHeader"], .st-emotion-cache-18ni7th, .st-emotion-cache-zq5w93 {
+/* ❌ ELIMINAZIONE DELLA STRISCIA SUPERIORE */
+header, [data-testid="stHeader"] {
     display: none !important;
     visibility: hidden !important;
-    background: transparent !important;
-    background-color: transparent !important;
     height: 0px !important;
 }
 
-/* Riposiziona il testo per recuperare lo spazio della striscia eliminata */
 .main .block-container {
     padding-top: 1.5rem !important;
 }
 
-/* Sidebar fluida stile vetro satinato scuro (Glassmorphism) */
+/* Sidebar stile vetro satinato scuro (Glassmorphism) */
 [data-testid="stSidebar"] {
     background-color: rgba(6, 9, 20, 0.75) !important;
     backdrop-filter: blur(20px) !important;
     -webkit-backdrop-filter: blur(20px) !important;
     border-right: 1px solid rgba(99, 102, 241, 0.12) !important;
-    box-shadow: 12px 0 40px rgba(0, 0, 0, 0.6) !important;
+}
+[data-testid="stSidebar"] * {
+    color: #f8fafc !important;
 }
 
-/* 📝 FOGLIO WORD MINISTERIALE (Effetto Carta Reale Sospesa) */
+/* 📝 FOGLIO WORD MINISTERIALE (Resta bianco puro come un vero foglio di carta) */
 .foglio-word { 
     background-color: #ffffff !important; 
-    color: #1e293b !important; 
     padding: 55px 70px !important; 
     margin: 25px auto !important; 
     max-width: 850px !important; 
     box-shadow: 0px 30px 70px rgba(0, 0, 0, 0.7), 0px 0px 50px rgba(99, 102, 241, 0.15) !important; 
     border: 1px solid rgba(255, 255, 255, 0.9) !important; 
     border-radius: 10px !important;
-    font-family: 'Times New Roman', Times, serif !important; 
-    line-height: 1.7 !important; 
-    font-size: 16px !important; 
 }
 
-/* Assicura il contrasto scuro dei caratteri sul foglio bianco */
-.foglio-word * {
+/* ⚠️ IMPORTANTE: Forza tutti i testi dentro il foglio Word a rimanere NERI */
+.foglio-word, .foglio-word *, .tabella-intestazione, .tabella-intestazione td, .foglio-word div, .foglio-word b {
     color: #1e293b !important;
+    font-family: 'Times New Roman', Times, serif !important;
 }
 
-/* Intestazione Ministeriale */
 .tabella-intestazione { 
     width: 100% !important; 
     border-collapse: collapse !important; 
     border-bottom: 2px solid #0f172a !important; 
     margin-bottom: 35px !important; 
-    font-family: 'Inter', sans-serif !important; 
-    font-size: 14px !important; 
 }
 .tabella-intestazione td { 
     border: none !important; 
     padding: 8px 0 !important; 
 }
 
-/* Box Valutazione per i Compiti */
+/* Box Valutazione per i Compiti (All'interno mantiene i testi scuri e leggibili) */
 .box-valutazione { 
     border-left: 5px solid #ef4444 !important; 
     background-color: #ffffff !important; 
@@ -96,28 +115,33 @@ header, [data-testid="stHeader"], .st-emotion-cache-18ni7th, .st-emotion-cache-z
     margin: 25px 0 !important; 
     border-radius: 8px !important; 
     box-shadow: 0 20px 45px rgba(0, 0, 0, 0.4) !important;
-    font-family: 'Inter', sans-serif !important;
-    line-height: 1.6 !important;
 }
-.box-valutazione * {
+.box-valutazione, .box-valutazione * {
     color: #1e293b !important;
+    font-family: 'Inter', sans-serif !important;
 }
 
-/* Pulsanti con bagliore neon indaco dinamico */
+/* Pulsanti premium con neon indaco */
 div.stButton > button {
     border-radius: 6px !important;
     padding: 11px 22px !important;
     font-weight: 600 !important;
     letter-spacing: 0.5px !important;
+    background-color: #fbbf24 !important; /* Colore giallo/oro per i tasti principali */
+    color: #0f172a !important; /* Testo scuro sopra il pulsante giallo */
+    border: none !important;
     transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.4) !important;
+}
+
+div.stButton > button * {
+    color: #0f172a !important;
 }
 
 div.stButton > button:hover {
     transform: translateY(-2px) !important;
     box-shadow: 0 8px 25px rgba(99, 102, 241, 0.4) !important;
-    border-color: #6366f1 !important;
+    background-color: #f59e0b !important;
 }
 
-/* Nasconde i link e i menu di branding standard */
 #MainMenu, footer, [data-testid="stDecoration"] { visibility: hidden; display: none !important; }

@@ -105,7 +105,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         tg_html = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', tg_pulito)
         tg_html = re.sub(r'\*(.*?)\*', r'<b>\1</b>', tg_html)
         
-        # 4. Separazione netta di Domande e Soluzioni
+        # 4. Separazione netta di Domande e Soluzioni tramite indici di lista
         html_domande = ""
         html_soluzioni = ""
         
@@ -120,7 +120,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         # 5. Layout tabella intestazione ministeriale
         i_html = f"<table class='tabella-intestazione'><tr><td style='width:60%;font-weight:bold;'>Istituto Superiori</td><td style='width:40%;text-align:right;font-weight:bold;'>Data: ____/____/________</td></tr><tr><td>Alunno/a: ___________________________</td><td style='text-align:right;'>Classe: ____ Sez. __</td></tr><tr><td style='padding-top:10px;font-size:16px;font-weight:bold;'>Verifica scritta ({diff.capitalize()})</td><td style='padding-top:10px;text-align:right;font-size:16px;font-weight:bold;'>Oggetto: {argomento.capitalize()}</td></tr></table>"
         
-        # Renderizza l'interfaccia aggiornata passando separatamente domande e soluzioni
+        # Renderizza l'interfaccia passando separatamente domande e soluzioni
         correttore.renderizza_documento_stampa(
             titolo=f"Verifica Scritta ({diff.capitalize()})", 
             argomento=argomento.capitalize(), 

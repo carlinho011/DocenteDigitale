@@ -3,65 +3,59 @@ import os
 import io
 from google import genai
 from reportlab.pdfgen import canvas
-from reportlab.lib.pagesizes import A4
 
+# Configurazione Pagina
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
-# --- CSS E LOGIN ---
-# (Inserisci qui il caricamento stile.css e la logica di login precedente)
-# [OMESSO PER BREVITÀ, USA QUELLO DEL MESSAGGIO PRECEDENTE]
+# --- CARICAMENTO CSS ---
+if os.path.exists("stile.css"):
+    with open("stile.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-def genera_pdf_verifica(dati):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(50, 800, f"Correzione Verifica: {dati['nome']} - {dati['classe']}")
-    c.setFont("Helvetica", 12)
-    # Logica icone: c.drawString(50, 750, "✅ Domanda 1: Corretta")
-    c.save()
-    buffer.seek(0)
-    return buffer
+# --- SESSIONE ---
+if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
 
-def genera_griglia_voti(dati):
-    buffer = io.BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    c.drawString(50, 800, "Griglia di Valutazione")
-    # Qui inseriresti la tabella con i punteggi per tipo
-    c.save()
-    buffer.seek(0)
-    return buffer
+# --- LOGIN ---
+if not st.session_state["autenticato"]:
+    st.title("Area Riservata 💜")
+    nome = st.text_input("Nome Docente:")
+    pw = st.text_input("Password:", type="password")
+    if st.button("Accedi"):
+        if pw == "MATTEI" and nome:
+            st.session_state.update({"autenticato": True, "nome_docente": nome})
+            st.rerun()
+    st.stop()
 
-# --- LOGICA CORREZIONE ---
-if funzione == "🔍 Correggi":
-    st.title("🔍 Centro Correzione")
-    
-    # 1. Input: Foto o PDF
-    scelta = st.radio("Come vuoi inserire il compito?", ["Carica File", "Scatta Foto"])
-    file = st.camera_input("Scatta") if scelta == "Scatta Foto" else st.file_uploader("Carica PDF/Foto", type=["jpg", "png", "pdf"])
+# --- SIDEBAR (DEFINIZIONE FUNZIONE) ---
+st.sidebar.title(f"Prof. {st.session_state['nome_docente']}")
+funzione = st.sidebar.radio("Navigazione", ["🚀 Genera Verifica", "🔍 Correggi"])
 
-    if file and st.button("Analizza e Correggi"):
-        with st.spinner("L'IA sta analizzando il compito..."):
+# --- LOGICA APP ---
+if funzione == "🚀 Genera Verifica":
+    st.title("🚀 Crea il tuo compito")
+    with st.form("form_viola"):
+        col1, col2 = st.columns(2)
+        materia = col1.text_input("Materia")
+        argomento = col2.text_input("Argomento")
+        tipo = st.selectbox("Tipologia Quesiti", ["Vero/Falso", "Scelta multipla", "Risposte aperte", "Miste"])
+        diff = st.select_slider("Difficoltà", options=["Facile", "Media", "Difficile"])
+        num = st.slider("Numero di domande", 1, 20, 5)
+        
+        if st.form_submit_button("Genera Verifica"):
             try:
-                # 2. Analisi IA
                 client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-                # Conversione immagine in formato leggibile da Gemini
-                img_bytes = file.getvalue()
-                
-                response = client.models.generate_content(
-                    model="gemini-2.0-flash",
-                    contents=[
-                        {"mime_type": "image/jpeg", "data": img_bytes},
-                        "Estrai Nome, Data, Classe. Correggi ogni domanda mettendo ✅ per corrette e ❌ per errate. Calcola voto 1/10 e scrivi un commento per l'alunno."
-                    ]
-                )
-                
-                # Simulazione estrazione dati (In produzione, parserizza il JSON di risposta)
-                dati = {"nome": "Studente", "classe": "3A", "voto": 8, "commento": "Bravo!"}
-                
-                # 3. Generazione PDF
-                st.success("Correzione completata!")
-                st.download_button("Scarica Verifica Corretta (PDF)", genera_pdf_verifica(dati), "verifica.pdf")
-                st.download_button("Scarica Griglia Voti (PDF)", genera_griglia_voti(dati), "griglia.pdf")
-                
+                prompt = [f"Crea una verifica di {materia} su {argomento}. Tipo: {tipo}. Difficoltà: {diff}. Numero quesiti: {num}."]
+                res = client.models.generate_content(model="gemini-2.0-flash", contents=prompt)
+                st.markdown(res.text)
             except Exception as e:
-                st.error(f"Errore durante l'analisi: {e}")
+                st.error(f"Errore: {e}")
+
+elif funzione == "🔍 Correggi":
+    st.title("🔍 Centro Correzione")
+    st.info("Funzionalità in fase di sviluppo.")
+    # Qui aggiungeremo in futuro la logica PDF per evitare conflitti
+
+# Logout
+if st.sidebar.button("Logout"):
+    st.session_state.clear()
+    st.rerun()

@@ -2,45 +2,27 @@
 
 :root {
     --bg-color: #1a0b2e;        /* Viola profondo */
-    --text-color: #f4d0e0;      /* Rosa cipria (testo) */
+    --text-color: #f4d0e0;      /* Rosa cipria */
     --accent-color: #006d77;    /* Verde petrolio */
-    --card-bg: #2a1b4e;        /* Viola leggermente più chiaro per le card */
+    --card-bg: #2a1b4e;        /* Viola card */
 }
 
-body, .stApp { 
-    background-color: var(--bg-color) !important;
-    font-family: 'Outfit', sans-serif !important;
-    color: var(--text-color) !important;
-}
+body, .stApp { background-color: var(--bg-color) !important; font-family: 'Outfit', sans-serif !important; color: var(--text-color) !important; }
 
-/* Card e Form */
-div.stMarkdownContainer, .stForm {
-    background-color: var(--card-bg) !important;
-    padding: 30px !important;
-    border-radius: 20px !important;
-    border: 1px solid #4a356d !important;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.3) !important;
-}
+div.stMarkdownContainer, .stForm { background-color: var(--card-bg) !important; padding: 30px !important; border-radius: 20px !important; border: 1px solid #4a356d !important; }
 
-h1, h2, h3, label, p { color: var(--text-color) !important; }
+h1, h2, label { color: var(--text-color) !important; }
 
-/* Input e Aree di compilazione (Verde Petrolio) */
+/* Input, Selectbox e Slider in Verde Petrolio */
 div[data-baseweb="input"] input, 
 div[data-baseweb="select"] div, 
-.stTextArea textarea {
+.stTextArea textarea, 
+div[data-testid="stSlider"] div[role="slider"] {
     background-color: var(--accent-color) !important;
     color: #ffffff !important;
     border-radius: 8px !important;
-    border: none !important;
 }
 
-/* Pulsanti */
-div.stButton > button {
-    background-color: var(--accent-color) !important;
-    color: #ffffff !important;
-    border-radius: 10px !important;
-    border: none !important;
-    font-weight: 600 !important;
-}
+div.stButton > button { background-color: var(--accent-color) !important; color: #ffffff !important; border-radius: 10px !important; border: none !important; font-weight: 600 !important; }
 
 [data-testid="stSidebar"] { background-color: #241444 !important; }

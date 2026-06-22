@@ -156,7 +156,7 @@ def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
     stile_titolo = ParagraphStyle('ValTitolo', fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#0f172a'))
     stile_sezione = ParagraphStyle('ValSez', fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b'), spaceBefore=10)
     
-    story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — EDULOGIC", stile_titolo))
+    story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — CORREZIONE", stile_titolo))
     story.append(Spacer(1, 15))
     story.append(Paragraph(f"<b>Studente/Alunno:</b> {nome_alunno}", stile_testo))
     story.append(Paragraph(f"<b>Traccia/Obiettivo rilevato:</b> {traccia}", stile_testo))

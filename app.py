@@ -3,28 +3,21 @@ import os
 import re
 import time
 import io
+# Assicurati di avere queste librerie installate: pip install streamlit reportlab pypdf google-genai
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Gestione librerie opzionali
-try:
-    import pypdf
-except ImportError:
-    pypdf = None
-
 # --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝", layout="wide")
 
-# Inizializzazione Session State
+# --- AUTENTICAZIONE (Semplificata per brevità) ---
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
-if "tema_scelto" not in st.session_state: st.session_state["tema_scelto"] = "Total Dark"
 
-# --- AUTENTICAZIONE ---
 if not st.session_state["autenticato"]:
     st.title("🔒 Accesso Docenti")
-    nome = st.text_input("Nome Docente")
+    nome = st.text_input("Nome e Cognome")
     pwd = st.text_input("Password", type="password")
     if st.button("Accedi"):
         if pwd == st.secrets.get("PASSWORD_DOCENTI", "ScuolaDigitale2026!"):
@@ -32,54 +25,62 @@ if not st.session_state["autenticato"]:
             st.session_state["nome_docente"] = nome
             st.rerun()
         else:
-            st.error("Credenziali errate")
+            st.error("Credenziali non valide")
     st.stop()
 
-# --- IMPORTAZIONE SDK GEMINI (Dopo autenticazione) ---
-from google import genai
-from google.genai import types
-client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
+# --- BARRA LATERALE (SOLO NAVIGAZIONE) ---
+with st.sidebar:
+    st.markdown("## 📝 EduCorrect AI")
+    st.write(f"Docente: **{st.session_state.get('nome_docente', 'Prof')}**")
+    st.markdown("---")
+    menu = st.radio("SEZIONI OPERATIVE:", ["🚀 Generatore Verifiche", "🔍 Scanner Correzioni"])
+    st.markdown("---")
+    if st.button("🚪 Esci"):
+        st.session_state.clear()
+        st.rerun()
 
-# --- BARRA LATERALE (MENU) ---
-st.sidebar.markdown(f"## 📝 EduCorrect AI")
-st.sidebar.write(f"Docente: **{st.session_state.get('nome_docente', 'Prof')}**")
+# --- LOGICA APPLICATIVA ---
 
-menu = st.sidebar.radio("NAVIGAZIONE", ["🚀 Generatore Verifiche", "🔍 Scanner Correzioni"])
-st.sidebar.markdown("---")
-
-# --- SEZIONE GENERATORE ---
 if menu == "🚀 Generatore Verifiche":
-    st.sidebar.subheader("⚙️ Impostazioni Generazione")
-    arg = st.sidebar.text_input("Argomento")
-    tipologia = st.sidebar.selectbox("Tipologia", ["Risposte aperte", "Scelta multipla"])
-    diff = st.sidebar.select_slider("Difficoltà", ["Facile", "Media", "Difficile"])
-    num = st.sidebar.slider("N. Domande", 1, 10, 5)
+    st.title("🚀 Generatore di Verifiche")
+    st.markdown("### Configurazione Verifica")
     
-    st.title("🚀 Generatore Integrato di Verifiche")
-    if st.button("Genera Verifica"):
-        # Logica di chiamata a Gemini (omessa per brevità, usa il tuo codice precedente)
-        st.write("Generazione in corso per:", arg)
+    # Parametri nel corpo centrale
+    col1, col2 = st.columns(2)
+    with col1:
+        argomento = st.text_input("Argomento Didattico:", placeholder="Es. Rivoluzione Francese")
+        tipologia = st.selectbox("Tipologia Quesiti:", ["Risposte aperte", "Scelta multipla", "Vero/Falso"])
+    with col2:
+        difficolta = st.select_slider("Livello di Difficoltà:", ["Facile", "Media", "Difficile"])
+        numero = st.slider("Numero di domande:", 1, 20, 5)
+    
+    if st.button("🪄 Genera Verifica", type="primary"):
+        st.info(f"Elaborazione in corso: {argomento} ({tipologia})...")
+        # Inserisci qui la logica di generazione con Gemini SDK
 
-# --- SEZIONE SCANNER ---
 elif menu == "🔍 Scanner Correzioni":
-    st.sidebar.subheader("⚙️ Metodo di Input")
-    metodo = st.sidebar.radio("Sorgente:", ["📁 Carica File", "📸 Fotocamera"])
-    
     st.title("🔍 Assistente AI alla Correzione")
     
-    if metodo == "📁 Carica File":
-        file = st.file_uploader("Carica PDF o Immagine", type=["pdf", "jpg", "png"])
+    # Metodo nel corpo centrale
+    metodo = st.radio("Scegli la modalità di acquisizione:", ["📁 Carica File (PDF/Immagini)", "📸 Scatta con Fotocamera"], horizontal=True)
+    
+    if metodo == "📁 Carica File (PDF/Immagini)":
+        file_input = st.file_uploader("Carica l'elaborato:", type=["pdf", "jpg", "png"])
     else:
-        file = st.camera_input("Scatta foto")
+        file_input = st.camera_input("Inquadra il compito:")
         
-    if st.button("Avvia Correzione"):
-        if file:
-            st.write("Analisi in corso...")
+    if st.button("🚀 Avvia Correzione AI", type="primary"):
+        if file_input:
+            st.success("Analisi dell'elaborato in corso...")
+            # Inserisci qui la logica di analisi con Gemini Vision/Text
         else:
-            st.warning("Carica prima un file!")
+            st.warning("Per favore, carica un documento o scatta una foto prima di procedere.")
 
-# --- FOOTER SIDEBAR ---
-st.sidebar.markdown("---")
-if st.sidebar.button("🚪 Esci"):
-    st.session_state.clear()
-    st.rerun()
+# --- CSS GLOBALE (Da inserire nel file stile.css o tramite st.markdown) ---
+st.markdown("""
+    <style>
+    /* Personalizzazione estetica */
+    .stApp { background-color: #f8fafc; }
+    div[data-testid="stSidebar"] { background-color: #0b132b; color: white; }
+    </style>
+""", unsafe_allow_html=True)

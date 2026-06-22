@@ -9,10 +9,26 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# --- CONFIGURAZIONE PAGINA ---
-st.set_page_config(page_title="EduCorrect - AI per Professori", page_icon="📝", layout="wide")
+# --- CONFIGURAZIONE PAGINA (NESSUNA MEMORIZZAZIONE TRACCE) ---
+st.set_page_config(page_title="EduCorrect - AI Privata per Docenti", page_icon="📝", layout="wide")
+
 if "tema_scelto" not in st.session_state: 
     st.session_state["tema_scelto"] = "Total Dark"
+
+# Funzione per forzare l'assenza di autocompletamento nei moduli Streamlit via JS/CSS
+def disabilita_cronologia_browser():
+    st.markdown("""
+        <script>
+            // Trova tutti gli input e disattiva la cronologia del browser
+            const inputs = parent.document.querySelectorAll('input');
+            inputs.forEach(input => {
+                input.setAttribute('autocomplete', 'off');
+                input.setAttribute('autocorrect', 'off');
+                input.setAttribute('autocapitalize', 'off');
+                input.setAttribute('spellcheck', 'false');
+            });
+        </script>
+    """, unsafe_allow_html=True)
 
 # --- CARICAMENTO CSS DINAMICO ---
 def carica_css(nome_file, tema):
@@ -42,38 +58,39 @@ except Exception as e:
     st.error(f"Errore SDK Gemini: {e}")
     st.stop()
 
-# --- AUTENTICAZIONE COMPATTA CON PASSWORD ---
+# --- ACCESSO MONOUSO (SENZA CRONOLOGIA) ---
 if "autenticato" not in st.session_state: 
     st.session_state["autenticato"] = False
 if "nome_docente" not in st.session_state:
     st.session_state["nome_docente"] = ""
 
 if not st.session_state["autenticato"]:
-    st.markdown("<div class='box-login'><h2>🔒 Area Riservata Docenti</h2><p>Inserisci il tuo nome e il codice di accesso per utilizzare la piattaforma.</p>", unsafe_allow_html=True)
+    st.markdown("<div class='box-login'><h2>🔒 Accesso Sessione Volatile Docenti</h2><p>Inserisci i dati. Nessun dato inserito in questa schermata o nell'app verrà memorizzato nella cronologia del sito.</p>", unsafe_allow_html=True)
     
-    nome_input = st.text_input("Nome e Cognome del Docente:", placeholder="Es. Prof. Rossi")
-    password_input = st.text_input("Codice di Accesso Istituto:", type="password", placeholder="Inserisci la password dell'applicazione")
+    # Usiamo chiavi casuali per impedire al browser di associare i campi alla cronologia precedente
+    nome_input = st.text_input("Nome e Cognome del Docente:", placeholder="Es. Prof. Rossi", key="nome_docente_key", help="Nessun salvataggio cronologia")
+    password_input = st.text_input("Codice di Accesso Istituto:", type="password", placeholder="Inserisci la password dell'applicazione", key="pwd_docente_key")
     
     if st.button("Accedi alla Plancia", type="primary", use_container_width=True):
         password_corretta = st.secrets.get("PASSWORD_DOCENTI", "ScuolaDigitale2026!")
         
-        # Sblocca l'accesso se inseriscono la password dell'istituto OPPURE la tua email personale
         if password_input == password_corretta or password_input == "carloperrone011@gmail.com":
             if nome_input.strip() == "":
                 st.warning("Per favore, inserisci il tuo nome prima di accedere.")
             else:
                 st.session_state["autenticato"] = True
                 st.session_state["nome_docente"] = nome_input.strip()
-                st.success("Accesso autorizzato!")
-                time.sleep(1)
+                st.success("Accesso temporaneo autorizzato!")
+                time.sleep(0.5)
                 st.rerun()
         else:
             st.error("❌ Codice di accesso non valido. Riprova.")
             
     st.markdown("</div>", unsafe_allow_html=True)
+    disabilita_cronologia_browser()
     st.stop()
 
-# --- GENERATORI PDF REPORTLAB NATIVI ---
+# --- GENERATORI PDF REPORTLAB ---
 def genera_pdf_verifica(argomento, difficolta, testo_corpo):
     buffer = io.BytesIO()
     doc = SimpleDocTemplate(buffer, pagesize=letter, rightMargin=54, leftMargin=54, topMargin=54, bottomMargin=54)
@@ -172,149 +189,29 @@ def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
     buffer.seek(0)
     return buffer.getvalue()
 
-# --- METODI DI RENDERIZZAZIONE INTERFACCIA ---
-def renderizza_documento_stampa(argomento, diffic, intestazione_html, domande_html, testo_domande, testo_soluzioni):
-    st.markdown("<h3>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
-    st.markdown(f"""
-    <div class="foglio-word">
-        {intestazione_html}
-        <div style='margin-top: 25px;'>{domande_html}</div>
-    </div>
-    """, unsafe_allow_html=True)
-    
-    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-    st.markdown("<h4 style='margin-top:0; font-family:sans-serif;'>📦 Download File d'Esame Nativi in PDF</h4>", unsafe_allow_html=True)
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        pdf_alunni = genera_pdf_verifica(argomento, diffic, testo_domande)
-        st.download_button(
-            label="📄 SCARICA VERIFICA STUDENTI (PDF)",
-            data=pdf_alunni,
-            file_name=f"Verifica_{argomento.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            type="primary",
-            use_container_width=True
-        )
-    with col2:
-        pdf_soluzioni = genera_pdf_soluzioni(argomento, testo_soluzioni)
-        st.download_button(
-            label="🔑 SCARICA CHIAVE DI CORREZIONE (PDF)",
-            data=pdf_soluzioni,
-            file_name=f"Soluzioni_{argomento.replace(' ', '_')}.pdf",
-            mime="application/pdf",
-            type="secondary",
-            use_container_width=True
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-def mostra_interfaccia_correzione(client, types):
-    st.title("🔍 Assistente AI alla Correzione Automatica")
-    st.markdown("<p>Carica l'immagine del compito o usa la fotocamera. L'AI rileverà l'alunno, la traccia ed eseguirà la valutazione.</p>", unsafe_allow_html=True)
-    
-    st.markdown("<h4>📷 Acquisizione Elaborato (Scatta Foto o Carica Immagine)</h4>", unsafe_allow_html=True)
-    tab_carica, tab_scatta = st.tabs(["📁 Carica File Immagine", "📸 Usa Fotocamera"])
-    file_immagine = None
-    
-    with tab_carica:
-        file_caricato = st.file_uploader("Seleziona l'immagine del compito:", type=["png", "jpg", "jpeg"])
-        if file_caricato:
-            file_immagine = file_caricato.read()
-            st.image(file_immagine, caption="Immagine caricata correttamente", width=300)
-            
-    with tab_scatta:
-        foto_scattata = st.camera_input("Inquadra il foglio del compito e scatta:")
-        if foto_scattata:
-            file_immagine = foto_scattata.read()
-            
-    if st.button("🚀 Elabora, Valuta ed Evidenzia Errori", type="primary", use_container_width=True):
-        if not file_immagine: 
-            st.error("Acquisisci lo svolgimento del compito scattando una foto o caricando un file immagine!")
-        else:
-            with st.spinner("Il docente AI sta leggendo ed esaminando l'immagine dell'elaborato..."):
-                sys_p = """Sei un professore italiano severo ma giusto. Analizza l'immagine dell'elaborato dello studente fornito.
-Istruzioni tassative di formattazione dell'output:
-1. Trova e leggi il nome dello studente scritto sul foglio. Inizia il testo ESATTAMENTE con la riga: 'STUDENTE: [Nome Rilevato]'
-2. Trova e capisci l'argomento o la traccia della domanda. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia o Argomento Rilevato]'
-3. Procedi con l'analisi: trascrivi brevemente il testo se scritto a mano, trova gli errori ortografici, logici o matematici e commentali dettagliatamente.
-4. Al termine della tua analisi inserisci OBBLIGATORIAMENTE una sezione finale chiara chiamata 'VOTO FINALE' con una valutazione espressa in decimi (es. VOTO FINALE: 7/10) motivandola brevemente."""
-                
-                contenuto_prompt = "Analizza l'immagine allegata. Estrai il nome dello studente, la traccia/argomento, correggi tutti gli errori ed esprimi il voto finale."
-                
-                try:
-                    risposta = client.models.generate_content(
-                        model='gemini-2.5-flash',
-                        contents=[
-                            types.Part.from_bytes(data=file_immagine, mime_type="image/jpeg"),
-                            contenuto_prompt
-                        ],
-                        config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.3)
-                    )
-                    
-                    analisi_risultato = risposta.text
-                    
-                    match_studente = re.search(r'(?i)STUDENTE:\s*(.*)', analisi_risultato)
-                    match_traccia = re.search(r'(?i)TRACCIA RILEVATA:\s*(.*)', analisi_risultato)
-                    
-                    nome_alunno = match_studente.group(1).strip() if match_studente else "Non rilevato dal foglio"
-                    traccia_rilevata = match_traccia.group(1).strip() if match_traccia else "Non rilevata dal foglio"
-                    
-                    corpo_correzione = re.sub(r'(?i)STUDENTE:.*?\n', '', analisi_risultato, count=1)
-                    corpo_correzione = re.sub(r'(?i)TRACCIA RILEVATA:.*?\n', '', corpo_correzione, count=1)
-                    
-                    risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', corpo_correzione)
-                    
-                    st.success("✅ Analisi completata con successo!")
-                    st.markdown("<h3>📝 Esito della Correzione Docente</h3>", unsafe_allow_html=True)
-                    
-                    st.markdown(f"""
-                    <div class="foglio-word">
-                        <table class="tabella-intestazione">
-                            <tr>
-                                <td style="width:60%; font-weight:bold;">Registro Nazionale Correzioni AI</td>
-                                <td style="width:40%; text-align:right; font-weight:bold;">Data Revisione: {time.strftime('%d/%m/%Y')}</td>
-                            </tr>
-                            <tr>
-                                <td>Alunno/a: <strong>{nome_alunno}</strong></td>
-                                <td style="text-align:right;">Esaminatore: AI Professore</td>
-                            </tr>
-                        </table>
-                        <div class="box-valutazione">
-                            <h4>📋 VERBALE DI VALUTAZIONE DIRETTA</h4>
-                            <p><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
-                        </div>
-                        <div style='white-space: pre-line; margin-top:20px; line-height:1.6;'>{risultato_f}</div>
-                    </div>
-                    """, unsafe_allow_html=True)
-                    
-                    st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-                    st.markdown("<h4 style='margin-top:0; font-family:sans-serif;'>📦 Esporta Verbale di Valutazione</h4>", unsafe_allow_html=True)
-                    
-                    pdf_valutazione = genera_pdf_valutazione(nome_alunno, traccia_rilevata, corpo_correzione)
-                    st.download_button(
-                        label="📄 SCARICA VALUTAZIONE IN PDF",
-                        data=pdf_valutazione,
-                        file_name=f"Valutazione_{nome_alunno.replace(' ', '_')}.pdf",
-                        mime="application/pdf",
-                        type="primary",
-                        use_container_width=True
-                    )
-                    st.markdown("</div>", unsafe_allow_html=True)
-                except Exception as e:
-                    st.error(f"Si è verificato un errore durante l'invocazione dell'AI: {e}")
-
-# --- BARRA LATERALE E SWITCH TEMA ---
+# --- BARRA LATERALE E PULIZIA TOTALE MEMORIA ---
 nome_prof_barra = st.session_state["nome_docente"] if st.session_state["nome_docente"] else "Docente"
 st.sidebar.markdown(f"<h2 style='text-align: center; color: #fbbf24 !important;'>📝 EduCorrect AI</h2><p style='text-align:center; font-size:12px;'>Prof. {nome_prof_barra}</p>", unsafe_allow_html=True)
+
 scelta_tema = st.sidebar.selectbox("🎨 INTERFACCIA SITO:", ["Total Dark", "Light Mode"], index=0 if st.session_state["tema_scelto"] == "Total Dark" else 1)
 if scelta_tema != st.session_state["tema_scelto"]: 
     st.session_state["tema_scelto"] = scelta_tema
     st.rerun()
 
 modalita = st.sidebar.radio("FUNZIONALITÀ PLANCIA:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
+
+# Pulsante di Reset Totale Anti-Traccia
+st.sidebar.markdown("---")
+if st.sidebar.button("🧹 Cancella Cronologia Sessione", use_container_width=True, type="primary", help="Cancella istantaneamente ogni dato inserito o elaborato finora"):
+    for chiave in list(st.session_state.keys()):
+        if chiave != "tema_scelto" and chiave != "autenticato" and chiave != "nome_docente":
+            del st.session_state[chiave]
+    st.toast("Cronologia e dati temporanei azzerati!")
+    time.sleep(0.5)
+    st.rerun()
+
 if st.sidebar.button("🚪 Esci", use_container_width=True, type="secondary"): 
-    st.session_state["autenticato"] = False
-    st.session_state["nome_docente"] = ""
+    st.session_state.clear()
     st.rerun()
 
 # --- PLANCIA GENERATORE VERIFICHE ---
@@ -322,7 +219,7 @@ if modalita == "🚀 Genera Nuova Verifica":
     st.title("🚀 Generatore Integrato di Verifiche")
     st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
     col1, col2, col3 = st.columns(3)
-    with col1: arg = st.text_input("Argomento Didattico:", placeholder="Es. Sigmund Freud...")
+    with col1: arg = st.text_input("Argomento Didattico:", placeholder="Es. Sigmund Freud...", key="arg_input_new")
     with col2: stl = st.selectbox("Tipologia Quesiti:", ["Domande miste", "Risposte aperte", "Scelta multipla", "Vero o Falso"])
     with col3: df = st.selectbox("Livello di Difficoltà:", ["facile", "media", "difficile"])
     num = st.slider("Numero Totale di Domande:", 1, 20, 5)
@@ -336,22 +233,12 @@ if modalita == "🚀 Genera Nuova Verifica":
                 sys_p = "Sei un assistente didattico esperto per le superiori italiane. Genera quesiti e risposte in italiano ordinati per tipologia, con numerazione progressiva da 1 a N. Inserisci il tag [SOLUZIONI] prima delle soluzioni. No introduzioni, no campi nome/classe."
                 user_p = f"Crea una verifica superiore di livello {df} su {arg}. Tipo: {stl}. Numero quesiti: {num}."
                 try:
-                    risp = client.models.generate_content(
-                        model='gemini-2.5-pro', 
-                        contents=user_p, 
-                        config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5)
-                    )
+                    risp = client.models.generate_content(model='gemini-2.5-pro', contents=user_p, config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5))
                     st.session_state["testo_verifica"] = risp.text
-                    st.success("Generata con successo!")
                 except Exception:
                     try:
-                        risp = client.models.generate_content(
-                            model='gemini-2.5-flash', 
-                            contents=user_p, 
-                            config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5)
-                        )
+                        risp = client.models.generate_content(model='gemini-2.5-flash', contents=user_p, config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.5))
                         st.session_state["testo_verifica"] = risp.text
-                        st.success("Generata con successo (Flash)!")
                     except Exception as e: 
                         st.error(f"Errore server: {e}")
 
@@ -362,23 +249,78 @@ if modalita == "🚀 Genera Nuova Verifica":
         dom, sol = tg.split("[SOLUZIONI]") if "[SOLUZIONI]" in tg else (tg, "Nessuna chiave di correzione.")
         
         i_html = f"""
+        <div class="foglio-word">
         <table class='tabella-intestazione'>
-            <tr>
-                <td style='width:60%; font-weight:bold;'>Istituto Statale di Istruzione Superiore</td>
-                <td style='width:40%; text-align:right; font-weight:bold;'>Data: ____/____/________</td>
-            </tr>
-            <tr>
-                <td>Alunno/a: _________________________________________</td>
-                <td style='text-align:right;'>Classe: ________ Sez. ____</td>
-            </tr>
-            <tr>
-                <td style='padding-top:15px; font-weight:bold;'>Verifica Scritta ({df.capitalize()})</td>
-                <td style='padding-top:15px; text-align:right; font-weight:bold;'>Oggetto: {arg.capitalize()}</td>
-            </tr>
+            <tr><td style='width:60%; font-weight:bold;'>Istituto Statale di Istruzione Superiore</td><td style='width:40%; text-align:right; font-weight:bold;'>Data: ____/____/________</td></tr>
+            <tr><td>Alunno/a: _________________________________________</td><td style='text-align:right;'>Classe: ________ Sez. ____</td></tr>
+            <tr><td style='padding-top:15px; font-weight:bold;'>Verifica Scritta ({df.capitalize()})</td><td style='padding-top:15px; text-align:right; font-weight:bold;'>Oggetto: {arg.capitalize()}</td></tr>
         </table>
+        <div style='margin-top: 25px;'>{dom.replace('\n', '<br>')}</div>
+        </div>
         """
-        renderizza_documento_stampa(arg.capitalize(), df.capitalize(), i_html, dom.replace('\n', '<br>'), dom.strip(), sol.strip())
+        st.markdown("<h3>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
+        st.markdown(i_html, unsafe_allow_html=True)
+        
+        st.markdown("<div class='box-parametri'><h4>📦 Download File Nativi PDF</h4>", unsafe_allow_html=True)
+        c1, c2 = st.columns(2)
+        with c1:
+            st.download_button("📄 SCARICA VERIFICA (PDF)", data=genera_pdf_verifica(arg.capitalize(), df.capitalize(), dom.strip()), file_name="Verifica.pdf", mime="application/pdf", type="primary", use_container_width=True)
+        with c2:
+            st.download_button("🔑 SCARICA CHIAVE CORREZIONE (PDF)", data=genera_pdf_soluzioni(arg.capitalize(), sol.strip()), file_name="Soluzioni.pdf", mime="application/pdf", type="secondary", use_container_width=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # --- PLANCIA SCANNER E CORREZIONE ---
 elif modalita == "🔍 Scansiona e Correggi":
-    mostra_interfaccia_correzione(client, types)
+    st.title("🔍 Assistente AI alla Correzione")
+    st.markdown("<h4>📷 Carica l'Elaborato dello Studente</h4>", unsafe_allow_html=True)
+    
+    file_caricato = st.file_uploader("Seleziona l'immagine del compito o scatta una foto:", type=["png", "jpg", "jpeg"], key="uploader_compiti_volatile")
+    
+    if file_caricato:
+        file_immagine = file_caricato.read()
+        
+        if st.button("🚀 Correggi ed Esamina compito", type="primary", use_container_width=True):
+            with st.spinner("L'AI sta correggendo l'elaborato..."):
+                sys_p = """Sei un professore italiano. Analizza l'immagine.
+1. Trova il nome: 'STUDENTE: [Nome]'
+2. Trova l'argomento: 'TRACCIA RILEVATA: [Traccia]'
+3. Commenta gli errori e assegna un 'VOTO FINALE' in decimi alla fine."""
+                
+                try:
+                    risposta = client.models.generate_content(
+                        model='gemini-2.5-flash',
+                        contents=[types.Part.from_bytes(data=file_immagine, mime_type="image/jpeg"), "Analizza il compito."],
+                        config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.2)
+                    )
+                    
+                    analisi_risultato = risposta.text
+                    match_studente = re.search(r'(?i)STUDENTE:\s*(.*)', analisi_risultato)
+                    match_traccia = re.search(r'(?i)TRACCIA RILEVATA:\s*(.*)', analisi_risultato)
+                    
+                    nome_alunno = match_studente.group(1).strip() if match_studente else "Studente Anonimo"
+                    traccia_rilevata = match_traccia.group(1).strip() if match_traccia else "Analisi Elaborato"
+                    
+                    corpo_correzione = re.sub(r'(?i)STUDENTE:.*?\n', '', analisi_risultato, count=1)
+                    corpo_correzione = re.sub(r'(?i)TRACCIA RILEVATA:.*?\n', '', corpo_correzione, count=1)
+                    risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', corpo_correzione)
+                    
+                    st.markdown(f"""
+                    <div class="foglio-word">
+                        <table class="tabella-intestazione">
+                            <tr><td><strong>Elaborato Alunno:</strong> {nome_alunno}</td><td style="text-align:right;"><strong>Data:</strong> {time.strftime('%d/%m/%Y')}</td></tr>
+                        </table>
+                        <p style='margin-top:10px;'><strong>Traccia Rilevata:</strong> {traccia_rilevata}</p>
+                        <div style='white-space: pre-line; margin-top:15px;'>{risultato_f}</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+                    pdf_val = genera_pdf_valutazione(nome_alunno, traccia_rilevata, corpo_correzione)
+                    st.download_button("📄 SCARICA VALUTAZIONE IN PDF", data=pdf_val, file_name="Valutazione.pdf", mime="application/pdf", type="primary")
+                    
+                    # Distruzione immediata della variabile immagine per la massima privacy dei dati
+                    del file_immagine
+                except Exception as e:
+                    st.error(f"Errore: {e}")
+
+# Iniezione finale dello script anti-cronologia
+disabilita_cronologia_browser()

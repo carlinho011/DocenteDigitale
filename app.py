@@ -46,8 +46,7 @@ def chiama_gemini(prompt, file_part=None):
     except Exception as e:
         st.error(f"ERRORE CRITICO: {e}")
         # Questo ci dice esattamente cosa non va (es. 403, 401, 429)
-        raise e:
-      if "404" in str(e) or "429" in str(e): continue
+        raise e: if "404" in str(e) or "429" in str(e): continue
             raise e
     raise Exception("Nessun modello disponibile o quota esaurita.")
 

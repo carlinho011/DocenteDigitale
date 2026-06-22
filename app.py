@@ -5,62 +5,85 @@ from google import genai
 from google.genai import types
 from reportlab.pdfgen import canvas
 
+# Configurazione Pagina
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
-# --- CSS ---
+# --- CARICAMENTO CSS ---
 if os.path.exists("stile.css"):
     with open("stile.css", "r", encoding="utf-8") as f:
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# --- LOGIN ---
+# --- SESSIONE ---
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
+
+# --- LOGIN ---
 if not st.session_state["autenticato"]:
     st.title("Area Riservata 💜")
+    nome = st.text_input("Nome Docente:")
     pw = st.text_input("Password:", type="password")
     if st.button("Accedi"):
-        if pw == "MATTEI":
-            st.session_state.update({"autenticato": True, "nome_docente": "Docente"})
+        if pw == "MATTEI" and nome:
+            st.session_state.update({"autenticato": True, "nome_docente": nome})
             st.rerun()
+        else: st.error("Password errata.")
     st.stop()
 
-# --- FUNZIONE CHIAMATA API SICURA ---
+# --- FUNZIONI CHIAMATA API (FALLBACK) ---
 def chiama_gemini(prompt, file_part=None):
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-    models = ["gemini-2.0-flash", "gemini-1.5-flash"]
-    
-    for model in models:
+    # Tenta prima con il modello principale, poi col secondario
+    for model in ["gemini-2.0-flash", "gemini-1.5-flash"]:
         try:
             contents = [file_part, prompt] if file_part else [prompt]
             return client.models.generate_content(model=model, contents=contents)
         except Exception as e:
-            if "429" in str(e): continue # Prova il modello successivo
+            if "429" in str(e): continue
             raise e
-    return None
+    raise Exception("Quota esaurita su entrambi i modelli.")
 
-# --- APP ---
-st.sidebar.title("EduCorrect AI")
-funzione = st.sidebar.radio("Menu", ["🚀 Genera Verifica", "🔍 Correggi"])
+# --- FUNZIONI PDF ---
+def crea_pdf_correzione(testo):
+    buffer = io.BytesIO()
+    c = canvas.Canvas(buffer, pagesize=(595, 842)) # A4
+    c.drawString(50, 800, "VALUTAZIONE DOCENTE")
+    c.drawString(50, 780, testo[:100])
+    c.save()
+    buffer.seek(0)
+    return buffer
+
+# --- INTERFACCIA ---
+st.sidebar.title(f"Prof. {st.session_state['nome_docente']}")
+funzione = st.sidebar.radio("Navigazione", ["🚀 Genera Verifica", "🔍 Correggi"])
 
 if funzione == "🚀 Genera Verifica":
-    st.title("🚀 Genera Verifica")
+    st.title("🚀 Crea il tuo compito")
     materia = st.text_input("Materia")
     argomento = st.text_input("Argomento")
+    tipo = st.selectbox("Tipologia", ["Vero/Falso", "Scelta multipla", "Aperte", "Miste"])
+    diff = st.select_slider("Difficoltà", ["Facile", "Media", "Difficile"])
+    num = st.slider("Numero di domande", 1, 20, 5)
+    
     if st.button("Genera"):
         try:
-            res = chiama_gemini(f"Crea verifica di {materia} su {argomento}")
-            st.markdown(res.text)
-        except Exception as e:
-            st.error(f"Errore: {e}")
+            res = chiama_gemini(f"Crea una verifica di {materia} su {argomento}. Tipo: {tipo}. Difficoltà: {diff}. Numero: {num}.")
+            st.session_state["risultato"] = res.text
+            st.success("Pronto!")
+        except Exception as e: st.error(f"Errore: {e}")
+    if "risultato" in st.session_state: st.markdown(st.session_state["risultato"])
 
 elif funzione == "🔍 Correggi":
     st.title("🔍 Centro Correzione")
-    file = st.file_uploader("Carica", type=["jpg", "png", "pdf"])
+    file = st.file_uploader("Carica File", type=["jpg", "png", "pdf"])
     if file and st.button("Analizza"):
         try:
             mime = "application/pdf" if file.type == "application/pdf" else "image/jpeg"
-            file_part = types.Part.from_bytes(data=file.getvalue(), mime_type=mime)
-            res = chiama_gemini("Correggi questo compito e dai un voto 1/10.", file_part)
-            st.success("Analisi completata!")
-            st.write(res.text)
-        except Exception as e:
-            st.error("Quota esaurita su tutti i modelli. Riprova più tardi.")
+            f_part = types.Part.from_bytes(data=file.getvalue(), mime_type=mime)
+            res = chiama_gemini("Analizza questo compito, estrai dati e correggi.", f_part)
+            st.success("Correzione eseguita!")
+            st.download_button("Scarica Verifica Corretta", crea_pdf_correzione(res.text), "verifica.pdf")
+            st.download_button("Scarica Griglia", crea_pdf_correzione("Griglia..."), "griglia.pdf")
+        except Exception as e: st.error(f"Errore: {e}")
+
+if st.sidebar.button("Logout"):
+    st.session_state.clear()
+    st.rerun()

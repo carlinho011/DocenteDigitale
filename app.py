@@ -9,7 +9,7 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 
-# Per la gestione dei PDF in input, serve pypdf (aggiungila a requirements.txt se usi PDF di compiti)
+# Gestione avanzata PDF sia testuali che scannerizzati (immagini)
 try:
     import pypdf
 except ImportError:
@@ -34,11 +34,28 @@ def disabilita_cronologia_browser():
         </script>
     """, unsafe_allow_html=True)
 
-# --- CARICAMENTO CSS DINAMICO ---
+# --- CARICAMENTO CSS CON FALLBACK INTEGRATO ---
 def carica_css(nome_file, tema):
+    css_caricato = False
     if os.path.exists(nome_file):
-        with open(nome_file, "r", encoding="utf-8") as f:
-            st.markdown(f"<style id='css-{time.time()}'>{f.read()}</style>", unsafe_allow_html=True)
+        try:
+            with open(nome_file, "r", encoding="utf-8") as f:
+                st.markdown(f"<style id='css-{time.time()}'>{f.read()}</style>", unsafe_allow_html=True)
+                css_caricato = True
+        except Exception:
+            css_caricato = False
+            
+    # Fallback: Se il file CSS esterno manca, inietta lo stile di emergenza per salvare il layout
+    if not css_caricato:
+        st.markdown("""
+        <style>
+            .box-login, .box-parametri { background: rgba(30, 41, 59, 0.7); padding: 25px; border-radius: 12px; border: 1px solid #334155; margin-bottom: 20px; }
+            .foglio-word { background: white; color: #1e293b; padding: 40px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 800px; margin: 20px auto; font-family: 'Times New Roman', Times, serif; }
+            .tabella-intestazione { width: 100%; border-collapse: collapse; margin-bottom: 20px; color: #1e293b; }
+            .tabella-intestazione td { border-bottom: 2px solid #0f172a; padding: 6px 0; font-family: sans-serif; }
+            .box-valutazione { background: #f1f5f9; border-left: 5px solid #b91c1c; padding: 15px; margin: 15px 0; color: #1e293b; }
+        </style>
+        """, unsafe_allow_html=True)
     
     if tema == "Total Dark":
         bg = "linear-gradient(-45deg, #020b1e, #0a1931, #0b132b, #001233) !important;"
@@ -69,7 +86,7 @@ if "nome_docente" not in st.session_state:
     st.session_state["nome_docente"] = ""
 
 if not st.session_state["autenticato"]:
-    st.markdown("<div class='box-login'><h2>🔒 Accesso Sessione Volatile Docenti</h2><p>Inserisci i dati per accedere.</p>", unsafe_allow_html=True)
+    st.markdown("<div class='box-login'><h2>🔒 Accesso Sessione Volatile Docenti</h2><p>Inserisci i dati per accedere alla plancia.</p>", unsafe_allow_html=True)
     nome_input = st.text_input("Nome e Cognome del Docente:", placeholder="Es. Prof. Rossi", key="nome_docente_key")
     password_input = st.text_input("Codice di Accesso Istituto:", type="password", placeholder="Inserisci la password dell'applicazione", key="pwd_docente_key")
     
@@ -156,7 +173,8 @@ def genera_pdf_valutazione(nome_alunno, traccia, analisi_testo):
     stile_titolo = ParagraphStyle('ValTitolo', fontName='Helvetica-Bold', fontSize=14, leading=18, textColor=colors.HexColor('#0f172a'))
     stile_sezione = ParagraphStyle('ValSez', fontName='Helvetica-Bold', fontSize=11, leading=15, textColor=colors.HexColor('#1e293b'), spaceBefore=10)
     
-    story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — CORREZIONE", stile_titolo))
+    # CORRETTO: Adesso stampa ufficialmente EDUCORRECT sul file PDF definitivo
+    story.append(Paragraph(f"📄 REGISTRO DI VALUTAZIONE — EDUCORRECT", stile_titolo))
     story.append(Spacer(1, 15))
     story.append(Paragraph(f"<b>Studente/Alunno:</b> {nome_alunno}", stile_testo))
     story.append(Paragraph(f"<b>Traccia/Obiettivo rilevato:</b> {traccia}", stile_testo))
@@ -257,34 +275,40 @@ if modalita == "🚀 Genera Nuova Verifica":
             st.download_button("🔑 SCARICA CHIAVE CORREZIONE (PDF)", data=genera_pdf_soluzioni(arg.capitalize(), sol.strip()), file_name="Soluzioni.pdf", mime="application/pdf", type="secondary", use_container_width=True)
         st.markdown("</div>", unsafe_allow_html=True)
 
-# --- PLANCIA SCANNER E CORREZIONE (CON FOTOCAMERA E INTERFACCIA COMPLETA) ---
+# --- PLANCIA SCANNER E CORREZIONE RAPIDA ---
 elif modalita == "🔍 Scansiona e Correggi":
     st.title("🔍 Assistente AI alla Correzione")
-    st.markdown("<p>Scegli se scattare una foto in tempo reale o caricare file d'esame (Immagini o PDF).</p>", unsafe_allow_html=True)
+    st.markdown("<p>Scegli se scattare una foto o caricare file d'esame (Immagini o PDF anche scannerizzati).</p>", unsafe_allow_html=True)
     
     tab_carica, tab_scatta = st.tabs(["📁 Carica File (Immagini/PDF)", "📸 Usa Fotocamera"])
     file_multimediale = None
-    is_pdf = False
+    is_pdf_scansionato = False
     testo_estratto_pdf = ""
 
     with tab_carica:
         file_caricato = st.file_uploader("Carica l'elaborato dello studente:", type=["png", "jpg", "jpeg", "pdf"], key="file_up_correzione")
         if file_caricato:
             if file_caricato.name.lower().endswith('.pdf'):
-                is_pdf = True
                 if pypdf:
                     try:
                         reader = pypdf.PdfReader(file_caricato)
-                        testo_pagine = [page.extract_text() for page in reader.pages]
-                        testo_estratto_pdf = "\n".join(testo_pagine)
-                        st.info("📄 Documento PDF caricato ed estratto con successo.")
+                        testo_pagine = [page.extract_text() for page in reader.pages if page.extract_text()]
+                        testo_estratto_pdf = "\n".join(testo_pagine).strip()
+                        
+                        # INTRODUZIONE LOGICA OCR: Se il PDF non ha testo nativo, lo trattiamo come immagine scannerizzata
+                        if not testo_estratto_pdf:
+                            is_pdf_scansionato = True
+                            file_multimediale = file_caricato.read()
+                            st.info("📸 Rilevato PDF scannerizzato (Immagine). L'AI eseguirà l'OCR visivo delle pagine.")
+                        else:
+                            st.info("📄 Documento PDF testuale caricato correttamente.")
                     except Exception as e:
                         st.error(f"Errore lettura PDF: {e}")
                 else:
-                    st.error("Libreria pypdf non installata nel server. Aggiungila a requirements.txt per elaborare i PDF.")
+                    st.error("Libreria pypdf non installata sul server.")
             else:
                 file_multimediale = file_caricato.read()
-                st.image(file_multimediale, caption="Anteprima file caricato", width=250)
+                st.image(file_multimediale, caption="Anteprima file", width=250)
 
     with tab_scatta:
         foto_scattata = st.camera_input("Inquadra la pagina del compito e scatta:")
@@ -293,50 +317,46 @@ elif modalita == "🔍 Scansiona e Correggi":
 
     st.markdown("---")
     
-    # TASTO PER AVVIARE LA CORREZIONE
     if st.button("🚀 Correggi ed Esamina Compito", type="primary", use_container_width=True):
         if not file_multimediale and not testo_estratto_pdf:
-            st.error("Per procedere acquisisci prima il compito (scatta una foto o inserisci un file valido)!")
+            st.error("Inserisci prima un file o scatta una foto per procedere!")
         else:
             with st.spinner("Il docente AI sta analizzando e correggendo lo svolgimento..."):
                 sys_p = """Sei un professore italiano severo ma giusto. Analizza il materiale fornito.
-Istruzioni tassative di formattazione:
-1. Trova il nome dello studente sul foglio o testo. Inizia l'output ESATTAMENTE con: 'STUDENTE: [Nome]'
-2. Trova la domanda o l'argomento. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia]'
-3. Procedi con l'analisi: evidenzia gli errori grammaticali, di logica o di calcolo, spiegandoli.
+Istruzioni tassative di formattazione dell'output:
+1. Trova il nome dello studente. Inizia l'output ESATTAMENTE con: 'STUDENTE: [Nome]'
+2. Trova l'argomento. Inserisci come seconda riga ESATTAMENTE: 'TRACCIA RILEVATA: [Traccia]'
+3. Procedi con l'analisi: evidenzia gli errori grammaticali, concettuali o di calcolo spiegandoli.
 4. Concludi OBBLIGATORIAMENTE con la dicitura esatta: 'VOTO FINALE: [Voto]/10' motivandolo in due righe."""
 
                 try:
-                    if is_pdf:
-                        # Analisi se l'input è un testo estratto da PDF
+                    # Se è un PDF testuale pulito
+                    if testo_estratto_pdf and not is_pdf_scansionato:
                         risposta = client.models.generate_content(
                             model='gemini-2.5-flash',
                             contents=[f"Analizza questo testo di un compito: \n\n{testo_estratto_pdf}"],
                             config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.2)
                         )
+                    # Se è un'immagine o un PDF scannerizzato (FOTO)
                     else:
-                        # Analisi se l'input è un'immagine/scatto della fotocamera
+                        mime_tipo = "application/pdf" if is_pdf_scansionato else "image/jpeg"
                         risposta = client.models.generate_content(
                             model='gemini-2.5-flash',
-                            contents=[types.Part.from_bytes(data=file_multimediale, mime_type="image/jpeg"), "Analizza l'immagine."],
+                            contents=[types.Part.from_bytes(data=file_multimediale, mime_type=mime_tipo), "Analizza visivamente questo compito ed esegui la correzione."],
                             config=types.GenerateContentConfig(system_instruction=sys_p, temperature=0.2)
                         )
                     
                     analisi_risultato = risposta.text
-                    
-                    # Estrazione parametri per Intestazione e Report PDF
                     match_studente = re.search(r'(?i)STUDENTE:\s*(.*)', analisi_risultato)
                     match_traccia = re.search(r'(?i)TRACCIA RILEVATA:\s*(.*)', analisi_risultato)
                     
                     nome_alunno = match_studente.group(1).strip() if match_studente else "Studente Anonimo"
                     traccia_rilevata = match_traccia.group(1).strip() if match_traccia else "Analisi Svolgimento"
                     
-                    # Pulizia testo per interfaccia grafica
                     corpo_correzione = re.sub(r'(?i)STUDENTE:.*?\n', '', analisi_risultato, count=1)
                     corpo_correzione = re.sub(r'(?i)TRACCIA RILEVATA:.*?\n', '', corpo_correzione, count=1)
                     risultato_f = re.sub(r'\*\*(.*?)\*\*', r'<strong>\1</strong>', corpo_correzione)
                     
-                    # Mostra il compito corretto a schermo con stile Foglio Word
                     st.success("✅ Correzione completata!")
                     st.markdown(f"""
                     <div class="foglio-word">
@@ -348,7 +368,6 @@ Istruzioni tassative di formattazione:
                     </div>
                     """, unsafe_allow_html=True)
                     
-                    # PULSANTE PER IL DOWNLOAD DEL PDF DELLA VALUTAZIONE
                     st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
                     st.markdown("<h4 style='margin-top:0;'>📦 Esporta Registro Valutazione</h4>", unsafe_allow_html=True)
                     pdf_val = genera_pdf_valutazione(nome_alunno, traccia_rilevata, corpo_correzione)
@@ -362,7 +381,6 @@ Istruzioni tassative di formattazione:
                     )
                     st.markdown("</div>", unsafe_allow_html=True)
                     
-                    # Svuota memoria immediata per motivi di riservatezza
                     if 'file_multimediale' in locals(): del file_multimediale
                 except Exception as e:
                     st.error(f"Errore durante l'elaborazione dell'AI: {e}")

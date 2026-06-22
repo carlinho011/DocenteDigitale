@@ -1,71 +1,40 @@
 import streamlit as st
 from google import genai
 
-# --- CONFIGURAZIONE PAGINA ---
+# Configurazione Pagina
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝", layout="wide")
 
-# --- INIZIALIZZAZIONE SESSIONE ---
-if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
-if "nome_docente" not in st.session_state: st.session_state["nome_docente"] = ""
-if "risposta_ia" not in st.session_state: st.session_state["risposta_ia"] = ""
+# Funzione per caricare il tuo CSS avanzato
+def carica_css():
+    try:
+        with open("stile.css", "r", encoding="utf-8") as f:
+            st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+    except FileNotFoundError:
+        st.warning("⚠️ File 'stile.css' non trovato.")
 
-# --- LOGICA DI LOGIN ---
+carica_css()
+
+# --- SELETTORE TEMA ---
+# Questo div serve al tuo CSS per attivare le regole (es. .tema-total-dark)
+# Puoi rendere questo dinamico con uno slider in sidebar se vuoi
+st.markdown('<div id="tema-attivo" class="tema-total-dark"></div>', unsafe_allow_html=True)
+
+# --- LOGIN (Usa la classe box-login definita nel tuo CSS) ---
+if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
+
 if not st.session_state["autenticato"]:
-    st.markdown("<div style='max-width: 400px; margin: 80px auto; padding: 40px; background: #f8fafc; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1);'>", unsafe_allow_html=True)
-    st.title("🔒 Accesso Docente")
-    nome = st.text_input("Inserisci il tuo Nome:")
+    # Wrapping nel div con classe box-login come da tuo CSS
+    st.markdown('<div class="box-login">', unsafe_allow_html=True)
+    st.title("🔒 Area Docenti")
+    nome = st.text_input("Nome Docente:")
     pw = st.text_input("Password:", type="password")
-    
     if st.button("Accedi"):
         if pw == "MATTEI" and nome.strip() != "":
             st.session_state.update({"autenticato": True, "nome_docente": nome})
             st.rerun()
-        else:
-            st.error("❌ Credenziali errate o nome mancante.")
-    st.markdown("</div>", unsafe_allow_html=True)
+    st.markdown('</div>', unsafe_allow_html=True)
     st.stop()
 
-# --- BARRA LATERALE ---
-st.sidebar.markdown(f"## 👤 Prof. {st.session_state['nome_docente']}")
-funzione = st.sidebar.radio("Navigazione:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
-if st.sidebar.button("🚪 Disconnetti"):
-    for key in list(st.session_state.keys()): del st.session_state[key]
-    st.rerun()
-
-# --- INTERFACCIA PRINCIPALE ---
-if funzione == "🚀 Genera Nuova Verifica":
-    st.title("🚀 Generatore di Verifiche")
-    
-    with st.form("form_gen"):
-        col1, col2 = st.columns(2)
-        materia = col1.text_input("Materia:", placeholder="Es. Storia")
-        argomento = col2.text_input("Argomento:", placeholder="Es. Rivoluzione Francese")
-        tipologia = st.selectbox("Tipologia:", ["Vero/Falso", "Scelta multipla", "Risposte aperte", "Miste"])
-        diff = st.select_slider("Difficoltà:", ["Facile", "Media", "Difficile"])
-        num = st.number_input("Numero domande:", 1, 20, 5)
-        submitted = st.form_submit_button("Genera Verifica")
-
-    if submitted:
-        if "GEMINI_KEY" not in st.secrets:
-            st.error("⚠️ Errore: GEMINI_KEY non trovata nei Secrets di Streamlit.")
-        else:
-            try:
-                with st.spinner("Generazione in corso..."):
-                    client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-                    prompt = f"Crea una verifica di {materia} su {argomento}. Tipo: {tipologia}, Difficoltà: {diff}, Numero domande: {num}. Inserisci [SOLUZIONI] alla fine."
-                    
-                    response = client.models.generate_content(
-                        model="gemini-2.0-flash",
-                        contents=prompt
-                    )
-                    st.session_state["risposta_ia"] = response.text
-            except Exception as e:
-                st.error(f"Errore durante la generazione: {e}")
-
-    if st.session_state["risposta_ia"]:
-        st.markdown("---")
-        st.markdown(st.session_state["risposta_ia"])
-
-elif funzione == "🔍 Scansiona e Correggi":
-    st.title("🔍 Centro Correzione")
-    st.info("Funzionalità in sviluppo.")
+# --- RESTO DELL'APP ---
+# Assicurati di avvolgere i blocchi di contenuto in div con le classi 
+# che hai definito nel CSS (es. class="foglio-word" o class="box-parametri")

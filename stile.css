@@ -22,3 +22,6 @@ div[data-baseweb="input"] input, div[data-baseweb="select"] div, .stTextArea tex
 div.stButton > button { background-color: var(--accent-color) !important; color: #ffffff !important; border-radius: 10px !important; border: none !important; font-weight: 600 !important; }
 
 [data-testid="stSidebar"] { background-color: #241444 !important; }
+
+/* (Mantenere il CSS precedente e aggiungere questo) */
+.stFileUploader, .stCameraInput { border: 2px dashed var(--accent-color) !important; border-radius: 20px !important; }

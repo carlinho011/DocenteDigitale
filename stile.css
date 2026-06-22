@@ -65,63 +65,23 @@ header, [data-testid="stHeader"], [data-testid="stDecoration"] {
 }
 
 /* Foglio esame scuro coordinato */
-#tema-attivo.tema-total-dark ~ .main .foglio-word { 
+#tema-attivo.tema-light-mode ~ .main .foglio-word { 
     background-color: rgba(14, 28, 54, 0.8) !important; 
     border: 1px solid rgba(99, 102, 241, 0.2) !important; 
     box-shadow: 0px 30px 80px rgba(0, 0, 0, 0.7) !important;
 }
-#tema-attivo.tema-total-dark ~ .main .foglio-word * {
+#tema-attivo.tema-light-mode ~ .main .foglio-word * {
     color: #f1f5f9 !important;
 }
-#tema-attivo.tema-total-dark ~ .main .tabella-intestazione {
+#tema-attivo.tema-light-mode ~ .main .tabella-intestazione {
     border-bottom: 2px solid rgba(255, 255, 255, 0.2) !important;
 }
-#tema-attivo.tema-total-dark ~ .main .box-valutazione { 
+#tema-attivo.tema-light-mode ~ .main .box-valutazione { 
     background-color: rgba(10, 25, 47, 0.85) !important; 
     border: 1px solid rgba(255, 255, 255, 0.05);
 }
-#tema-attivo.tema-total-dark ~ .main .box-valutazione * {
+#tema-attivo.tema-light-mode ~ .main .box-valutazione * {
     color: #f8fafc !important;
-}
-
-/* ==========================================================================
-   ☀️ MODALITÀ LIGHT MODE (SFONDO GRIGIO CHIARO TRADIZIONALE)
-   ========================================================================== */
-#tema-attivo.tema-light-mode ~ [data-testid="stAppViewContainer"], 
-#tema-attivo.tema-light-mode ~ [data-testid="stAppViewContainer"] .stApp {
-    background: #f8fafc !important;
-    background-image: radial-gradient(#e2e8f0 1.5px, transparent 1.5px) !important;
-    background-size: 20px 20px !important;
-    animation: none !important;
-}
-
-#tema-attivo.tema-light-mode ~ .main h1, 
-#tema-attivo.tema-light-mode ~ .main h2, 
-#tema-attivo.tema-light-mode ~ .main h3, 
-#tema-attivo.tema-light-mode ~ .main h4, 
-#tema-attivo.tema-light-mode ~ .main p, 
-#tema-attivo.tema-light-mode ~ .main span,
-#tema-attivo.tema-light-mode ~ .main label p {
-    color: #1e293b !important;
-}
-
-#tema-attivo.tema-light-mode ~ .main .box-parametri {
-    background-color: #ffffff !important; 
-    border: 1px solid #e2e8f0; 
-}
-
-#tema-attivo.tema-light-mode ~ .main div[data-baseweb="input"] input, 
-#tema-attivo.tema-light-mode ~ .main div[data-baseweb="select"] div, 
-#tema-attivo.tema-light-mode ~ .main .stTextArea textarea {
-    color: #1e293b !important;
-    background-color: #ffffff !important;
-}
-
-#tema-attivo.tema-light-mode ~ .main div[data-baseweb="input"], 
-#tema-attivo.tema-light-mode ~ .main div[data-baseweb="select"], 
-#tema-attivo.tema-light-mode ~ .main .stTextArea textarea {
-    background-color: #ffffff !important;
-    border: 1px solid #cbd5e1 !important;
 }
 
 /* Foglio esame bianco classico stampabile */

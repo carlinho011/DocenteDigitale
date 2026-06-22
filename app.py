@@ -92,3 +92,14 @@ elif funzione == "🔍 Correggi":
 if st.sidebar.button("Logout"):
     st.session_state.clear()
     st.rerun()
+
+# TEST DIAGNOSTICO - Inseriscilo in fondo al tuo file app.py
+if st.sidebar.button("Diagnostica API"):
+    try:
+        client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
+        st.write("Tentativo di connessione...")
+        # Usiamo il metodo list_models per vedere se la chiave è accettata
+        models = client.models.list()
+        st.success("Chiave valida! Modelli trovati.")
+    except Exception as e:
+        st.error(f"FALLITO: {e}")

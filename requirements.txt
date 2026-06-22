@@ -3,3 +3,4 @@ PyJWT
 streamlit-oauth
 reportlab
 google-genai
+streamlit

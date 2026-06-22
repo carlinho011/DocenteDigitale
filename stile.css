@@ -1,38 +1,37 @@
 @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600&display=swap');
 
 :root {
-    --bg-color: #fdfcf8;
-    --primary-color: #6366f1;
-    --text-color: #334155;
+    --bg-color: #f4f1ea;       /* Colore crema riposante */
+    --card-bg: #e9e6dd;       /* Leggermente più scuro per contrasto */
+    --primary-color: #4a5568;  /* Grigio-blu elegante, meno sparato del viola */
+    --text-color: #2d3748;
 }
 
-body, html, .stApp { 
+body, .stApp { 
     background-color: var(--bg-color) !important;
     font-family: 'Outfit', sans-serif !important;
     color: var(--text-color);
 }
 
-/* Card accoglienti */
+/* Card che emergono morbidamente dallo sfondo */
 div.stMarkdownContainer, .stForm {
-    background-color: #ffffff !important;
+    background-color: var(--card-bg) !important;
     padding: 30px !important;
-    border-radius: 24px !important;
-    box-shadow: 0 10px 30px rgba(0,0,0,0.05) !important;
-    border: 1px solid #e2e8f0 !important;
+    border-radius: 20px !important;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.05) !important;
+    border: 1px solid rgba(0,0,0,0.05) !important;
 }
 
-h1, h2 { color: var(--primary-color) !important; }
+h1, h2 { color: #2d3748 !important; }
 
-/* Pulsanti amichevoli */
+/* Pulsanti stile "Soft" */
 div.stButton > button {
-    background-color: var(--primary-color) !important;
-    color: white !important;
-    border-radius: 12px !important;
-    border: none !important;
-    padding: 12px 24px !important;
+    background-color: #d6d3c9 !important; /* Colore terra */
+    color: #2d3748 !important;
+    border-radius: 10px !important;
+    border: 1px solid #c8c5bc !important;
     font-weight: 600 !important;
-    transition: transform 0.2s ease !important;
 }
-div.stButton > button:hover { transform: scale(1.02); }
+div.stButton > button:hover { background-color: #c8c5bc !important; }
 
-[data-testid="stSidebar"] { background-color: #f1f5f9 !important; }
+[data-testid="stSidebar"] { background-color: #e9e6dd !important; }

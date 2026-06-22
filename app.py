@@ -18,7 +18,7 @@ if "autenticato" not in st.session_state: st.session_state["autenticato"] = Fals
 
 # --- LOGIN ---
 if not st.session_state["autenticato"]:
-    st.title("Area Riservata 💜")
+    st.title("Area Riservata Docenti")
     nome = st.text_input("Nome Docente:")
     pw = st.text_input("Password:", type="password")
     if st.button("Accedi"):

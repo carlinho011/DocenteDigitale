@@ -30,13 +30,23 @@ if not st.session_state["autenticato"]:
 
 # --- LOGICA API (SENZA PREFISSI) ---
 def chiama_gemini(prompt, file_part=None):
+    # Debug estremo
+    st.write(f"DEBUG: Key presente: {st.secrets.get('GEMINI_KEY') is not None}")
+    
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-    # Nomi modelli puliti per evitare 404
-    for model in ["gemini-2.0-flash", "gemini-1.5-flash"]:
-        try:
-            contents = [file_part, prompt] if file_part else [prompt]
-            return client.models.generate_content(model=model, contents=contents)
-        except Exception as e:
+    
+    # Test diretto di connessione
+    try:
+        # Usiamo generate_content con un testo minimo per vedere se passa l'autenticazione
+        response = client.models.generate_content(
+            model="gemini-1.5-flash",
+            contents="Ciao, rispondi solo 'OK'"
+        )
+        return response
+    except Exception as e:
+        st.error(f"ERRORE CRITICO: {e}")
+        # Questo ci dice esattamente cosa non va (es. 403, 401, 429)
+        raise e:
             # Continua se la risorsa non è trovata o la quota è esaurita
             if "404" in str(e) or "429" in str(e): continue
             raise e

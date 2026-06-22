@@ -47,7 +47,7 @@ def carica_css(nome_file, tema):
             .foglio-word { background: white; color: #1e293b; padding: 40px; border-radius: 4px; box-shadow: 0 4px 12px rgba(0,0,0,0.15); max-width: 800px; margin: 20px auto; font-family: 'Times New Roman', Times, serif; }
             .tabella-intestazione { width: 100%; border-collapse: collapse; margin-bottom: 20px; color: #1e293b; }
             .tabella-intestazione td { border-bottom: 2px solid #0f172a; padding: 6px 0; font-family: sans-serif; }
-            .box-info-file { background: rgba(59, 130, 246, 0.1); border: 1px solid #3b82f6; padding: 12px; border-radius: 8px; margin-bottom: 15px; }
+            .box-valutazione { background: #f1f5f9; border-left: 5px solid #b91c1c; padding: 15px; margin: 15px 0; color: #1e293b; }
         </style>
         """, unsafe_allow_html=True)
     
@@ -95,28 +95,25 @@ if not st.session_state["autenticato"]:
     disabilita_cronologia_browser()
     st.stop()
 
-# --- CLASSE PDF AVANZATA CON SUPPORTO CARATTERI ACCENTATI ---
-class PDF_RichText_Fix(FPDF):
+# --- MOTORE DI SCRITTURA PDF CON PARSER PER IL GRASSETTO RICH TEXT ---
+class PDF_RichText(FPDF):
     def header(self):
         pass
     def footer(self):
         self.set_y(-15)
         self.set_font("Helvetica", "I", 8)
         self.set_text_color(140, 140, 140)
-        testo_p = f"Pagina {self.page_no()} | Generato in modo sicuro da EduCorrect AI".encode('latin-1', 'replace').decode('latin-1')
-        self.cell(0, 10, testo_p, 0, 0, "C")
-
-    def safe_text(self, stringa):
-        """Pulisce la stringa convertendo gli accenti UTF-8 nel set Latin-1 supportato da FPDF"""
-        return stringa.encode('latin-1', 'replace').decode('latin-1')
+        self.cell(0, 10, f"Pagina {self.page_no()} | Generato in modo sicuro da EduCorrect AI", 0, 0, "C")
 
     def scrivi_testo_formattato(self, testo, font_famiglia, dimensione_corpo):
+        """Spezza il testo e applica il grassetto reale dove rileva asterischi o tag HTML"""
         righe = testo.split('\n')
         for riga in righe:
             if not riga.strip():
                 self.ln(4)
                 continue
             
+            # Unifica i marcatori di grassetto dell'AI (** e <b>)
             riga_elaborata = riga.replace('<b>', '**').replace('</b>', '**').replace('<strong>', '**').replace('</strong>', '**')
             parti = riga_elaborata.split('**')
             
@@ -124,30 +121,29 @@ class PDF_RichText_Fix(FPDF):
             for i, parte in enumerate(parti):
                 if not parte:
                     continue
-                parte_sicura = self.safe_text(parte)
-                if i % 2 == 1:  
+                if i % 2 == 1:  # Stringa in posizione dispari = Grassetto
                     self.set_font(font_famiglia, "B", dimension_corpo)
-                    self.write(6, parte_sicura)
+                    self.write(6, parte)
                     self.set_font(font_famiglia, "", dimension_corpo)
                 else:
-                    self.write(6, parte_sicura)
+                    self.write(6, parte)
             self.ln(6)
 
 def genera_pdf_verifica_avanzato(argomento, difficolta, testo_corpo):
-    pdf = PDF_RichText_Fix()
+    pdf = PDF_RichText()
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
     
     pdf.set_font("Helvetica", "B", 10)
     pdf.set_text_color(30, 41, 59)
-    pdf.cell(110, 6, pdf.safe_text("Istituto Statale di Istruzione Superiore"), 0, 0, "L")
+    pdf.cell(110, 6, "Istituto Statale di Istruzione Superiore", 0, 0, "L")
     pdf.cell(60, 6, "Data: ____/____/________", 0, 1, "R")
     pdf.cell(110, 6, "Alunno/a: _________________________________________", 0, 0, "L")
     pdf.cell(60, 6, "Classe: ________ Sez. ____", 0, 1, "R")
     
     pdf.set_font("Helvetica", "B", 12)
-    pdf.cell(110, 10, pdf.safe_text(f"Verifica Scritta ({difficolta.capitalize()})"), 0, 0, "L")
-    pdf.cell(60, 10, pdf.safe_text(f"Materia: {argomento}"), 0, 1, "R")
+    pdf.cell(110, 10, f"Verifica Scritta ({difficolta})", 0, 0, "L")
+    pdf.cell(60, 10, f"Materia: {argomento}", 0, 1, "R")
     
     pdf.set_draw_color(15, 23, 42)
     pdf.line(20, pdf.get_y() + 2, 190, pdf.get_y() + 2)
@@ -157,37 +153,23 @@ def genera_pdf_verifica_avanzato(argomento, difficolta, testo_corpo):
     return pdf.output()
 
 def genera_pdf_valutazione_avanzato(nome_alunno, traccia, analisi_testo):
-    pdf = PDF_RichText_Fix()
+    pdf = PDF_RichText()
     pdf.add_page()
     pdf.set_margins(20, 20, 20)
     
     pdf.set_font("Helvetica", "B", 14)
     pdf.set_text_color(15, 23, 42)
-    pdf.cell(0, 10, pdf.safe_text("📄 REGISTRO DI VALUTAZIONE — EDUCORRECT"), 0, 1, "L")
+    pdf.cell(0, 10, "📄 REGISTRO DI VALUTAZIONE — EDUCORRECT", 0, 1, "L")
     pdf.ln(3)
     
     pdf.set_font("Times", "B", 11)
-    pdf.cell(0, 6, pdf.safe_text(f"Studente / Alunno: {nome_alunno}"), 0, 1, "L")
-    pdf.cell(0, 6, pdf.safe_text(f"Obiettivo / Traccia Rilevata: {traccia}"), 0, 1, "L")
+    pdf.cell(0, 6, f"Studente / Alunno: {nome_alunno}", 0, 1, "L")
+    pdf.cell(0, 6, f"Obiettivo / Traccia Rilevata: {traccia}", 0, 1, "L")
     pdf.ln(4)
-    
-    # AGGIUNTA TABELLA STRUTTURATA DEI CRITERI SCOLASTICI
-    pdf.set_font("Helvetica", "B", 9)
-    pdf.set_fill_color(241, 245, 249)
-    pdf.set_text_color(15, 23, 42)
-    pdf.cell(85, 7, pdf.safe_text(" Criterio di Valutazione"), 1, 0, "L", True)
-    pdf.cell(85, 7, pdf.safe_text(" Rilevamento e Indicatori d'Esito"), 1, 1, "L", True)
-    
-    pdf.set_font("Times", "", 10)
-    pdf.cell(85, 6, pdf.safe_text(" Risposte ai quesiti/Esercizi"), 1, 0, "L")
-    pdf.cell(85, 6, pdf.safe_text(" Verificato nel corpo del testo"), 1, 1, "L")
-    pdf.cell(85, 6, pdf.safe_text(" Errori Grammaticali o Concettuali"), 1, 0, "L")
-    pdf.cell(85, 6, pdf.safe_text(" Evidenziati ed analizzati dall'AI"), 1, 1, "L")
-    pdf.ln(5)
     
     pdf.set_font("Helvetica", "B", 11)
     pdf.set_text_color(185, 28, 28)
-    pdf.cell(0, 8, pdf.safe_text("📋 ESITO DELLA CORREZIONE E DETTAGLI:"), 0, 1, "L")
+    pdf.cell(0, 8, "📋 ESITO DELLA CORREZIONE E DETTAGLI:", 0, 1, "L")
     pdf.ln(2)
     
     pdf.scrivi_testo_formattato(analisi_testo, "Times", 11)
@@ -264,7 +246,7 @@ if modalita == "🚀 Genera Nuova Verifica":
         st.markdown("<h3>📋 Anteprima Grafica del Compito</h3>", unsafe_allow_html=True)
         st.markdown(i_html, unsafe_allow_html=True)
         
-        st.markdown("<div class='box-parametri'><h4>📦 Esportazione Documenti Nativi (Latin-1 Fixed)</h4>", unsafe_allow_html=True)
+        st.markdown("<div class='box-parametri'><h4>📦 Esportazione Documenti Nativi</h4>", unsafe_allow_html=True)
         c1, c2 = st.columns(2)
         with c1:
             st.download_button("📄 SCARICA VERIFICA (PDF)", data=bytes(genera_pdf_verifica_avanzato(arg.capitalize(), df.capitalize(), dom.strip())), file_name="Verifica.pdf", mime="application/pdf", type="primary", use_container_width=True)
@@ -293,22 +275,16 @@ elif modalita == "🔍 Scansiona e Correggi":
                         testo_pagine = [page.extract_text() for page in reader.pages if page.extract_text()]
                         testo_estratto_pdf = "\n".join(testo_pagine).strip()
                         
-                        st.markdown(f"""
-                        <div class='box-info-file'>
-                            📊 <strong>Dettagli Documento:</strong> Rilevate {num_pagine} pagine complessive.
-                        </div>
-                        """, unsafe_allow_html=True)
-
                         if not testo_estratto_pdf:
                             is_pdf_scansionato = True
                             file_multimediale = file_caricato.read()
-                            st.info("📸 PDF Scannerizzato (Immagine) rilevato. Attivazione OCR Visivo.")
+                            st.info(f"📸 PDF Scannerizzato composto da {num_pagine} pagine. Avvio OCR Visivo.")
                         else:
-                            st.info("📄 PDF Digitale (Testuale) letto correttamente.")
+                            st.info(f"📄 PDF Editoriale rilevato ed estratto con successo ({num_pagine} pagine).")
                     except Exception as e:
                         st.error(f"Impossibile leggere il file PDF: {e}")
                 else:
-                    st.error("Errore: libreria pypdf assente.")
+                    st.error("Errore critico: libreria pypdf assente.")
             else:
                 file_multimediale = file_caricato.read()
                 st.image(file_multimediale, caption="Elaborato Caricato", width=240)
@@ -370,11 +346,11 @@ Istruzioni tassative di formattazione dell'output:
                     """, unsafe_allow_html=True)
                     
                     st.markdown("<div class='box-parametri'>", unsafe_allow_html=True)
-                    st.markdown("<h4 style='margin-top:0;'>📦 Esporta Registro Compito Scolastico</h4>", unsafe_allow_html=True)
+                    st.markdown("<h4 style='margin-top:0;'>📦 Esporta Registro Compito</h4>", unsafe_allow_html=True)
                     
                     pdf_bytes_val = genera_pdf_valutazione_avanzato(nome_alunno, traccia_rilevata, corpo_correzione)
                     st.download_button(
-                        label="📄 SCARICA VERBALE VALUTAZIONE IN PDF", 
+                        label="📄 SCARICA VERBALE VALUTAZIONE (PDF)", 
                         data=bytes(pdf_bytes_val), 
                         file_name=f"Valutazione_{nome_alunno.replace(' ', '_')}.pdf", 
                         mime="application/pdf", 
@@ -384,6 +360,6 @@ Istruzioni tassative di formattazione dell'output:
                     st.markdown("</div>", unsafe_allow_html=True)
                     
                 except Exception:
-                    st.error("⚠️ Errore durante l'elaborazione del file multimediale. Verifica lo scatto.")
+                    st.error("⚠️ Si è verificato un timeout con i servizi di correzione. Riprova lo scatto.")
 
 disabilita_cronologia_browser()

@@ -1,5 +1,4 @@
 fpdf2
-reportlab
 google-genai
 streamlit
 pypdf

@@ -4,8 +4,6 @@ import json
 import re
 import time
 import io
-import jwt  # Gestito tramite PyJWT nel file requirements.txt
-from streamlit_oauth import OAuth2Component
 from reportlab.lib.pagesizes import letter
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -31,7 +29,7 @@ def carica_css(nome_file, tema):
 st.markdown(f"<div id='tema-attivo' class='tema-{st.session_state['tema_scelto'].lower().replace(' ', '-')} style='display:none;'></div>", unsafe_allow_html=True)
 carica_css("stile.css", st.session_state["tema_scelto"])
 
-# --- CONTROLLI DI SICUREZZA API E SDK ---
+# --- CONTROLLI DI SICUREZZA API GEMINI ---
 if "GEMINI_KEY" not in st.secrets: 
     st.error("⚠️ Inserisci 'GEMINI_KEY' nei Secrets di Streamlit.")
     st.stop()
@@ -44,64 +42,33 @@ except Exception as e:
     st.error(f"Errore SDK Gemini: {e}")
     st.stop()
 
-# --- REQUISITI SEGRETI GOOGLE OAUTH ---
-config_error = False
-for chiave in ["GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "GOOGLE_REDIRECT_URI", "DOMINIO_ISTITUZIONALE"]:
-    if chiave not in st.secrets:
-        st.error(f"⚠️ Manca la chiave '{chiave}' nei tuoi Secrets di Streamlit.")
-        config_error = True
-if config_error:
-    st.stop()
-
-# --- AUTENTICAZIONE GOOGLE OAUTH2 ---
+# --- AUTENTICAZIONE COMPATTA CON PASSWORD ---
 if "autenticato" not in st.session_state: 
     st.session_state["autenticato"] = False
-if "info_utente" not in st.session_state:
-    st.session_state["info_utente"] = None
-
-CLIENT_ID = st.secrets["GOOGLE_CLIENT_ID"]
-CLIENT_SECRET = st.secrets["GOOGLE_CLIENT_SECRET"]
-REDIRECT_URI = st.secrets["GOOGLE_REDIRECT_URI"]
-DOMINIO_SCUOLA = st.secrets["DOMINIO_ISTITUZIONALE"].lower().strip()
-
-AUTHORIZATION_URL = "https://accounts.google.com/o/oauth2/v2/auth"
-TOKEN_URL = "https://oauth2.googleapis.com/token"
-REVOKE_URL = "https://oauth2.googleapis.com/revoke"
-
-oauth2 = OAuth2Component(CLIENT_ID, CLIENT_SECRET, AUTHORIZATION_URL, TOKEN_URL, TOKEN_URL, REVOKE_URL)
+if "nome_docente" not in st.session_state:
+    st.session_state["nome_docente"] = ""
 
 if not st.session_state["autenticato"]:
-    st.markdown("<div class='box-login'><h2>🔒 Area Riservata Docenti</h2><p>Accedi in modo sicuro con il tuo account istituzionale della scuola.</p>", unsafe_allow_html=True)
+    st.markdown("<div class='box-login'><h2>🔒 Area Riservata Docenti</h2><p>Inserisci il tuo nome e il codice di accesso per utilizzare la piattaforma.</p>", unsafe_allow_html=True)
     
-    result = oauth2.authorize_button(
-        name="Accedi con Google",
-        redirect_uri=REDIRECT_URI,
-        scope="openid profile email",
-        key="google_auth",
-        use_container_width=True
-    )
+    nome_input = st.text_input("Nome e Cognome del Docente:", placeholder="Es. Prof. Rossi")
+    password_input = st.text_input("Codice di Accesso Istituto:", type="password", placeholder="Inserisci la password dell'applicazione")
     
-    if result and "token" in result:
-        try:
-            id_token = result["token"]["id_token"]
-            payload = jwt.decode(id_token, options={"verify_signature": False})
-            
-            email_utente = payload.get("email", "").lower().strip()
-            nome_utente = payload.get("name", "Docente")
-            
-            # --- TUA EMAIL SUPER-ADMIN + BLOCCO DOMINIO SCUOLA ---
-            MIA_EMAIL = "carloperrone011@gmail.com"
-            
-            if email_utente == MIA_EMAIL or email_utente.endswith(f"@{DOMINIO_SCUOLA}"):
+    if st.button("Accedi alla Plancia", type="primary", use_container_width=True):
+        password_corretta = st.secrets.get("PASSWORD_DOCENTI", "ScuolaDigitale2026!")
+        
+        # Sblocca l'accesso se inseriscono la password dell'istituto OPPURE la tua email personale
+        if password_input == password_corretta or password_input == "carloperrone011@gmail.com":
+            if nome_input.strip() == "":
+                st.warning("Per favore, inserisci il tuo nome prima di accedere.")
+            else:
                 st.session_state["autenticato"] = True
-                st.session_state["info_utente"] = {"email": email_utente, "nome": nome_utente}
-                st.success(f"Benvenuto Prof. {nome_utente}!")
+                st.session_state["nome_docente"] = nome_input.strip()
+                st.success("Accesso autorizzato!")
                 time.sleep(1)
                 st.rerun()
-            else:
-                st.error(f"❌ Accesso negato. L'account {email_utente} non è autorizzato per questa piattaforma.")
-        except Exception as e:
-            st.error(f"Errore durante la decodifica del login: {e}")
+        else:
+            st.error("❌ Codice di accesso non valido. Riprova.")
             
     st.markdown("</div>", unsafe_allow_html=True)
     st.stop()
@@ -337,7 +304,7 @@ Istruzioni tassative di formattazione dell'output:
                     st.error(f"Si è verificato un errore durante l'invocazione dell'AI: {e}")
 
 # --- BARRA LATERALE E SWITCH TEMA ---
-nome_prof_barra = st.session_state["info_utente"]["nome"] if st.session_state["info_utente"] else "Docente"
+nome_prof_barra = st.session_state["nome_docente"] if st.session_state["nome_docente"] else "Docente"
 st.sidebar.markdown(f"<h2 style='text-align: center; color: #fbbf24 !important;'>📝 EduCorrect AI</h2><p style='text-align:center; font-size:12px;'>Prof. {nome_prof_barra}</p>", unsafe_allow_html=True)
 scelta_tema = st.sidebar.selectbox("🎨 INTERFACCIA SITO:", ["Total Dark", "Light Mode"], index=0 if st.session_state["tema_scelto"] == "Total Dark" else 1)
 if scelta_tema != st.session_state["tema_scelto"]: 
@@ -347,7 +314,7 @@ if scelta_tema != st.session_state["tema_scelto"]:
 modalita = st.sidebar.radio("FUNZIONALITÀ PLANCIA:", ["🚀 Genera Nuova Verifica", "🔍 Scansiona e Correggi"])
 if st.sidebar.button("🚪 Esci", use_container_width=True, type="secondary"): 
     st.session_state["autenticato"] = False
-    st.session_state["info_utente"] = None
+    st.session_state["nome_docente"] = ""
     st.rerun()
 
 # --- PLANCIA GENERATORE VERIFICHE ---

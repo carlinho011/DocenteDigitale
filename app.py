@@ -15,11 +15,21 @@ if os.path.exists("stile.css"):
 # --- INIZIALIZZAZIONE API ---
 try:
     genai.configure(api_key=st.secrets["GEMINI_KEY"])
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    
+    # Trova un modello valido automaticamente
+    def get_available_model():
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
+                return genai.GenerativeModel(m.name)
+        return None
+
+    model = get_available_model()
+    if model is None:
+        st.error("Nessun modello disponibile trovato con questa API Key.")
+        st.stop()
 except Exception as e:
     st.error(f"Errore di configurazione API: {e}")
     st.stop()
-
 # --- FUNZIONI PDF ---
 def genera_pdf_base(titolo, contenuto):
     buffer = io.BytesIO()

@@ -15,7 +15,6 @@ if os.path.exists("stile.css"):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # --- INIZIALIZZAZIONE CLIENT ---
-# NOTA: Assicurati che nel tuo file .streamlit/secrets.toml ci sia: GEMINI_KEY = "..."
 try:
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
 except Exception as e:
@@ -24,8 +23,8 @@ except Exception as e:
 
 # --- LOGICA API ---
 def chiama_gemini(prompt, file_bytes=None, mime_type=None):
-    # Rimuoviamo 'models/' dal nome per evitare l'errore 404
-    model_name = "gemini-1.5-flash"
+    # CORREZIONE: Uso della versione '002' che è lo standard di produzione
+    model_name = "gemini-1.5-flash-002"
     
     contents = []
     if file_bytes and mime_type:
@@ -34,7 +33,6 @@ def chiama_gemini(prompt, file_bytes=None, mime_type=None):
     
     time.sleep(1)
     
-    # La libreria google-genai gestisce la chiamata al modello senza prefisso
     response = client.models.generate_content(
         model=model_name,
         contents=contents

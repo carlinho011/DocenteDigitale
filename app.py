@@ -6,10 +6,15 @@ from google import genai
 from google.genai import types
 from reportlab.pdfgen import canvas
 
-# --- CONFIGURAZIONE ---
+# --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
-# Inizializza il client usando la chiave da secrets.toml
+# --- CARICAMENTO CSS ---
+if os.path.exists("stile.css"):
+    with open("stile.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
+
+# --- INIZIALIZZAZIONE CLIENT ---
 try:
     client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
 except Exception as e:
@@ -18,15 +23,14 @@ except Exception as e:
 
 # --- LOGICA API ---
 def chiama_gemini(prompt, file_bytes=None, mime_type=None):
-    # Usiamo gemini-1.5-flash (il più stabile)
-    model_name = "gemini-1.5-flash"
+    # Se il modello 'gemini-1.5-flash' da 404, prova 'gemini-1.5-flash-latest'
+    model_name = "gemini-1.5-flash" 
     
     contents = []
     if file_bytes and mime_type:
         contents.append(types.Part.from_bytes(data=file_bytes, mime_type=mime_type))
     contents.append(prompt)
     
-    # Pausa di sicurezza per i limiti di quota
     time.sleep(1)
     
     response = client.models.generate_content(
@@ -42,7 +46,6 @@ def genera_pdf_base(titolo, contenuto):
     c.setFont("Helvetica-Bold", 18)
     c.drawString(50, 800, titolo)
     c.setFont("Helvetica", 12)
-    # Gestione testo lungo
     c.drawString(50, 770, contenuto[:80] + "...")
     c.save()
     buffer.seek(0)
@@ -51,7 +54,7 @@ def genera_pdf_base(titolo, contenuto):
 # --- SESSIONE ---
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
 
-# --- UI LOGIN ---
+# --- LOGIN ---
 if not st.session_state["autenticato"]:
     st.title("Area Riservata Docente")
     nome = st.text_input("Nome Docente:")
@@ -63,7 +66,7 @@ if not st.session_state["autenticato"]:
         else: st.error("Password errata.")
     st.stop()
 
-# --- INTERFACCIA PRINCIPALE ---
+# --- INTERFACCIA ---
 st.sidebar.title(f"Prof. {st.session_state['nome_docente']}")
 funzione = st.sidebar.radio("Navigazione", ["🚀 Genera Verifica", "🔍 Correggi"])
 
@@ -71,13 +74,14 @@ if funzione == "🚀 Genera Verifica":
     st.title("🚀 Crea il tuo compito")
     materia = st.text_input("Materia")
     argomento = st.text_input("Argomento")
-    tipo = st.selectbox("Tipologia", ["Vero/Falso", "Scelta multipla", "Aperte"])
-    num = st.slider("Numero di domande", 1, 10, 5)
+    tipo = st.selectbox("Tipologia", ["Vero/Falso", "Scelta multipla", "Aperte", "Miste"])
+    diff = st.select_slider("Difficoltà", ["Facile", "Media", "Difficile"])
+    num = st.slider("Numero di domande", 1, 20, 5)
     
     if st.button("Genera"):
         with st.spinner("Generazione in corso..."):
             try:
-                res = chiama_gemini(f"Crea una verifica di {materia} su {argomento}. Tipo: {tipo}. Numero: {num}.")
+                res = chiama_gemini(f"Crea una verifica di {materia} su {argomento}. Tipo: {tipo}. Difficoltà: {diff}. Numero: {num}.")
                 st.session_state["risultato"] = res
                 st.success("Pronto!")
             except Exception as e: st.error(f"Errore API: {e}")
@@ -90,10 +94,10 @@ elif funzione == "🔍 Correggi":
         with st.spinner("Analisi IA in corso..."):
             try:
                 mime = "application/pdf" if file.type == "application/pdf" else "image/jpeg"
-                res = chiama_gemini("Analizza il compito e correggi.", file.getvalue(), mime)
+                res = chiama_gemini("Analizza il compito, correggi, assegna voto e commento.", file.getvalue(), mime)
                 st.success("Correzione eseguita!")
                 st.markdown(res)
-                st.download_button("Scarica PDF", genera_pdf_base("Correzione", res), "correzione.pdf")
+                st.download_button("Scarica Verifica Corretta", genera_pdf_base("Verifica Corretta", res), "verifica.pdf")
             except Exception as e: st.error(f"Errore: {e}")
 
 if st.sidebar.button("Logout"):

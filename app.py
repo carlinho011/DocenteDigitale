@@ -1,75 +1,95 @@
 import streamlit as st
+import os
 import io
-import re
 import google.generativeai as genai
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
-from reportlab.lib import colors
+from reportlab.pdfgen import canvas
 
-# --- CONFIGURAZIONE GRAFICA ---
+# --- CONFIGURAZIONE PAGINA ---
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
-st.markdown("""
-    <style>
-    /* Stile "Foglio Bianco" con ombra elegante */
-    .foglio-bianco {
-        background-color: white;
-        color: #333;
-        padding: 50px;
-        border: 1px solid #e0e0e0;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border-radius: 8px;
-        margin-bottom: 30px;
-        font-family: 'Helvetica', sans-serif;
-        line-height: 1.6;
-    }
-    .stButton>button {
-        width: 100%;
-        border-radius: 5px;
-        height: 3em;
-        background-color: #f0f2f6;
-    }
-    </style>
-""", unsafe_allow_html=True)
+# --- CARICAMENTO CSS ---
+if os.path.exists("stile.css"):
+    with open("stile.css", "r", encoding="utf-8") as f:
+        st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
-# --- FUNZIONE PDF CON FORMATTAZIONE TIPOGRAFICA ---
-def genera_pdf_grafico(titolo, testo_md):
+# --- INIZIALIZZAZIONE API ---
+try:
+    genai.configure(api_key=st.secrets["GEMINI_KEY"])
+    model = genai.GenerativeModel('gemini-1.5-flash')
+except Exception as e:
+    st.error(f"Errore di configurazione API: {e}")
+    st.stop()
+
+# --- FUNZIONI PDF ---
+def genera_pdf_base(titolo, contenuto):
     buffer = io.BytesIO()
-    doc = SimpleDocTemplate(buffer, pagesize=A4, rightMargin=72, leftMargin=72, topMargin=72, bottomMargin=72)
-    styles = getSampleStyleSheet()
-    
-    # Stile personalizzato per il testo
-    body_style = ParagraphStyle(
-        'BodyText',
-        parent=styles['Normal'],
-        fontSize=11,
-        leading=14,
-        spaceAfter=10
-    )
-    
-    story = [
-        Paragraph(titolo, styles['Title']),
-        Spacer(1, 24)
-    ]
-    
-    # Processo di formattazione
-    for riga in testo_md.split('\n'):
-        riga = riga.strip()
-        if not riga: continue
-        
-        if riga.startswith('#'):
-            story.append(Paragraph(riga.replace('#', '').strip(), styles['Heading1']))
-        elif riga.startswith(('-', '*')):
-            story.append(Paragraph("• " + riga.replace('-', '').replace('*', '').strip(), body_style))
-        else:
-            riga = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', riga)
-            story.append(Paragraph(riga, body_style))
-    
-    doc.build(story)
+    c = canvas.Canvas(buffer, pagesize=(595, 842))
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(50, 800, titolo)
+    c.setFont("Helvetica", 12)
+    # Gestione semplice del testo nel PDF
+    y = 770
+    for linea in contenuto.split('\n'):
+        c.drawString(50, y, linea)
+        y -= 20
+    c.save()
     buffer.seek(0)
     return buffer
 
-# --- LOGICA APP (Identica alla precedente, ma ora con la nuova funzione grafica) ---
-# [La logica di autenticazione e navigazione rimane invariata]
-# Usa genera_pdf_grafico("Lezione", st.session_state["dispensa"]) invece della vecchia funzione
+# --- SESSIONE ---
+if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
+
+# --- LOGIN ---
+if not st.session_state["autenticato"]:
+    st.title("Area Riservata Docente")
+    nome = st.text_input("Nome Docente:")
+    pw = st.text_input("Password:", type="password")
+    if st.button("Accedi"):
+        if pw == "MATTEI" and nome:
+            st.session_state.update({"autenticato": True, "nome_docente": nome})
+            st.rerun()
+        else: st.error("Password errata.")
+    st.stop()
+
+# --- INTERFACCIA ---
+st.sidebar.title(f"Prof. {st.session_state['nome_docente']}")
+funzione = st.sidebar.radio("Navigazione", ["🚀 Genera Verifica", "🔍 Correggi"])
+
+if funzione == "🚀 Genera Verifica":
+    st.title("🚀 Crea il tuo compito")
+    materia = st.text_input("Materia")
+    argomento = st.text_input("Argomento")
+    num = st.slider("Numero di domande", 1, 20, 5)
+    
+    if st.button("Genera"):
+        with st.spinner("Generazione in corso..."):
+            # Generazione separata
+            st.session_state["dispensa"] = model.generate_content(f"Crea un testo informativo su {argomento} per {materia}").text
+            st.session_state["verifica"] = model.generate_content(f"Crea una verifica di {num} domande su {argomento}").text
+
+    if "dispensa" in st.session_state:
+        st.subheader("Anteprima Lezione")
+        st.markdown(st.session_state["dispensa"])
+        st.subheader("Anteprima Verifica")
+        st.markdown(st.session_state["verifica"])
+        
+        # Due tasti download separati
+        col1, col2 = st.columns(2)
+        with col1:
+            st.download_button("Scarica Lezione PDF", genera_pdf_base("Lezione", st.session_state["dispensa"]), "lezione.pdf")
+        with col2:
+            st.download_button("Scarica Verifica PDF", genera_pdf_base("Verifica", st.session_state["verifica"]), "verifica.pdf")
+
+elif funzione == "🔍 Correggi":
+    st.title("🔍 Centro Correzione")
+    file = st.file_uploader("Carica File", type=["jpg", "png", "pdf"])
+    if file and st.button("Analizza"):
+        with st.spinner("Analisi IA in corso..."):
+            res = model.generate_content("Analizza il compito, correggi, assegna voto e commento.").text
+            st.success("Correzione eseguita!")
+            st.markdown(res)
+            st.download_button("Scarica Verifica Corretta", genera_pdf_base("Verifica Corretta", res), "verifica_corretta.pdf")
+
+if st.sidebar.button("Logout"):
+    st.session_state.clear()
+    st.rerun()

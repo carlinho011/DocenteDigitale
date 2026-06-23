@@ -9,7 +9,7 @@ st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
 # Configurazione API con la libreria classica
 genai.configure(api_key=st.secrets["GEMINI_KEY"])
-model = genai.GenerativeModel('gemini-1.5-flash')
+model = genai.GenerativeModel(model_name='models/gemini-1.5-flash')
 
 def chiama_gemini(prompt, file_data=None, mime_type=None):
     if file_data and mime_type:

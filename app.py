@@ -13,17 +13,20 @@ if os.path.exists("stile.css"):
         st.markdown(f"<style>{f.read()}</style>", unsafe_allow_html=True)
 
 # --- INIZIALIZZAZIONE API ---
-genai.configure(api_key=st.secrets["GEMINI_KEY"])
+try:
+    genai.configure(api_key=st.secrets["GEMINI_KEY"])
 
-def get_best_model():
-    """Seleziona automaticamente il modello compatibile con l'account."""
-    for m in genai.list_models():
-        if 'generateContent' in m.supported_generation_methods:
-            if 'gemini-1.5' in m.name:
+    def get_first_available_model():
+        """Trova il primo modello valido disponibile nel tuo account."""
+        for m in genai.list_models():
+            if 'generateContent' in m.supported_generation_methods:
                 return genai.GenerativeModel(m.name)
-    return genai.GenerativeModel('gemini-pro')
+        raise Exception("Nessun modello trovato nel tuo account.")
 
-model = get_best_model()
+    model = get_first_available_model()
+except Exception as e:
+    st.error(f"Errore di configurazione API: {e}")
+    st.stop()
 
 # --- LOGICA API ---
 def chiama_gemini(prompt, file_data=None, mime_type=None):

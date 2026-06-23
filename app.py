@@ -1,44 +1,27 @@
 import streamlit as st
 import os
 import io
-import time
-from google import genai
-from google.genai import types
+import google.generativeai as genai
 from reportlab.pdfgen import canvas
 
-# --- CONFIGURAZIONE PAGINA ---
+# --- CONFIGURAZIONE ---
 st.set_page_config(page_title="EduCorrect AI", page_icon="📝")
 
-# --- INIZIALIZZAZIONE ---
-try:
-    # Cerchiamo di inizializzare in modo standard
-    client = genai.Client(api_key=st.secrets["GEMINI_KEY"])
-except Exception as e:
-    st.error(f"Errore inizializzazione: {e}")
-    st.stop()
+# Configurazione API con la libreria classica
+genai.configure(api_key=st.secrets["GEMINI_KEY"])
+model = genai.GenerativeModel('gemini-1.5-flash')
 
-# --- LOGICA API ---
-def chiama_gemini(prompt, file_bytes=None, mime_type=None):
-    # La lista dei nomi validi che l'API accetta spesso senza il prefisso 'models/'
-    # Se il tuo account è limitato, prova a cambiare questo nome
-    model_name = "gemini-1.5-flash"
-    
-    contents = []
-    if file_bytes and mime_type:
-        contents.append(types.Part.from_bytes(data=file_bytes, mime_type=mime_type))
-    contents.append(prompt)
-    
-    try:
-        response = client.models.generate_content(
-            model=model_name,
-            contents=contents
-        )
-        return response.text
-    except Exception as e:
-        # Se fallisce, mostriamo l'errore completo per capire cosa succede
-        return f"ERRORE API: {str(e)}"
+def chiama_gemini(prompt, file_data=None, mime_type=None):
+    if file_data and mime_type:
+        # Caricamento file tramite il sistema File API classico
+        file_io = io.BytesIO(file_data)
+        # Nota: per file piccoli, passiamo il contenuto direttamente
+        response = model.generate_content([prompt, {"mime_type": mime_type, "data": file_data}])
+    else:
+        response = model.generate_content(prompt)
+    return response.text
 
-# --- UI (SESSIONE E LOGIN) ---
+# --- LOGIN E UI ---
 if "autenticato" not in st.session_state: st.session_state["autenticato"] = False
 
 if not st.session_state["autenticato"]:
@@ -52,7 +35,7 @@ if not st.session_state["autenticato"]:
         else: st.error("Password errata.")
     st.stop()
 
-# --- UI INTERFACCIA ---
+# --- INTERFACCIA ---
 st.sidebar.title(f"Prof. {st.session_state['nome_docente']}")
 funzione = st.sidebar.radio("Navigazione", ["🚀 Genera Verifica", "🔍 Correggi"])
 
@@ -70,20 +53,10 @@ elif funzione == "🔍 Correggi":
     file = st.file_uploader("Carica File", type=["jpg", "png", "pdf"])
     if file and st.button("Analizza"):
         with st.spinner("Analisi..."):
-            mime = "application/pdf" if file.type == "application/pdf" else "image/jpeg"
+            mime = "image/jpeg" if file.type != "application/pdf" else "application/pdf"
             res = chiama_gemini("Correggi questo compito.", file.getvalue(), mime)
             st.markdown(res)
 
 if st.sidebar.button("Logout"):
     st.session_state.clear()
     st.rerun()
-
-# --- DIAGNOSTICA (SOTTO IL CODICE) ---
-if st.sidebar.checkbox("Mostra Diagnostica API"):
-    try:
-        models = client.models.list()
-        st.write("Modelli disponibili nel tuo account:")
-        for m in models:
-            st.write(f"- {m.name}")
-    except Exception as e:
-        st.error(f"Non riesco a leggere i modelli: {e}")
